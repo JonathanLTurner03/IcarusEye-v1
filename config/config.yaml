@@ -3,6 +3,10 @@ model:
   deepsort: "models/deepsort_model.tflite"
 
 video:
+  live: true
+  device: 0
+  source: "./input.mp4"
+  target_fps: 60
   nth_frame: 5  # Adjust workload
 
 output:
