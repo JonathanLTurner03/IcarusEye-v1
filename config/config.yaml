@@ -1,0 +1,10 @@
+model:
+  yolov8s: "models/yolov8s.pt"
+  deepsort: "models/deepsort_model.tflite"
+
+video:
+  nth_frame: 5  # Adjust workload
+
+output:
+  save_video: true
+  output_path: "outputs/detected_video.mp4"
