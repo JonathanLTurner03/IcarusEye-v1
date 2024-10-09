@@ -3,7 +3,7 @@ model:
   deepsort: "models/deepsort_model.tflite"
 
 video:
-  live: false
+  live: true
   device: 0
   source: "test_flight.mp4"
   target_fps: 60

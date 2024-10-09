@@ -86,6 +86,8 @@ class MainWindow(QMainWindow):
                 # Get the native resolution of the frame
                 native_height, native_width = frame.shape[:2]
 
+                print(f"Native resolution: {native_width}x{native_height}")
+
                 # Desired detection resolution (e.g., 680p)
                 detection_width = 1210  # Width corresponding to 680p
                 detection_height = 680
@@ -108,11 +110,15 @@ class MainWindow(QMainWindow):
                 label = f"Class: {int(class_id)}, Confidence: {score:.2f}"
                 cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-            # Convert the frame to QImage for displaying in QLabel (in native resolution)
+            # Convert the frame to QImage for displaying in QLabel
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_image.shape
             bytes_per_line = ch * w
             q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+
+            # Scale the QImage to fit within the QLabel while maintaining aspect ratio
+            q_image = q_image.scaled(self.video_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+
             self.video_label.setPixmap(QPixmap.fromImage(q_image))
         else:
             print("Error: Unable to read the video frame or end of video")
