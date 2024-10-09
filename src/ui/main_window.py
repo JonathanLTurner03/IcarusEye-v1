@@ -23,7 +23,9 @@ class MainWindow(QMainWindow):
         self.video_label = self.findChild(QLabel, 'videoLabel')
 
         # Initialize VideoStream (OpenCV) based on config
-        source = self.config['video']['source'] if not self.config['video']['live'] else self.config['video']['device']
+        source = self.config['video']['source'] \
+            if not self.config['video']['live'] else self.config['video']['device']
+
         self.video_stream = VideoStream(source)
 
         # Access buttons (from the .ui file)
@@ -88,14 +90,14 @@ class MainWindow(QMainWindow):
                 # Get the native resolution of the frame
                 native_height, native_width = frame.shape[:2]
 
-                print(f"Native resolution: {native_width}x{native_height}")
 
                 # Desired detection resolution (e.g., 680p)
                 detection_width = 1210  # Width corresponding to 680p
                 detection_height = 680
 
                 # Resize the frame to the detection resolution
-                resized_frame = cv2.resize(frame, (detection_width, detection_height))
+                resized_frame = cv2.resize(frame, (detection_height, detection_width))
+                print(f'resized_frame shape: {resized_frame.shape}')
 
                 # Send the resized frame to the detection thread
                 self.detection_thread.send_frame.emit(resized_frame)
@@ -110,7 +112,8 @@ class MainWindow(QMainWindow):
                 # Draw the bounding box and label
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 label = f"Class: {int(class_id)}, Confidence: {score:.2f}"
-                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (0, 255, 0), 2)
 
             # Convert the frame to QImage for displaying in QLabel
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -119,7 +122,8 @@ class MainWindow(QMainWindow):
             q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
 
             # Scale the QImage to fit within the QLabel while maintaining aspect ratio
-            q_image = q_image.scaled(self.video_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            q_image = q_image.scaled(self.video_label.size(), Qt.AspectRatioMode.KeepAspectRatio,
+                                     Qt.TransformationMode.SmoothTransformation)
 
             self.video_label.setPixmap(QPixmap.fromImage(q_image))
         else:
