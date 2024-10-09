@@ -9,5 +9,5 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
 
-    # Execute the application
+    # Start the application loop
     sys.exit(app.exec())
