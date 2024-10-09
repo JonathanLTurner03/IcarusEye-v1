@@ -5,7 +5,7 @@ class YOLOv8Detection:
     def __init__(self, model_path):
         """
         Initialize the YOLOv8 model with the given path.
-        :param model_path: Path to the YOLOv8 weights file (e.g., custom-yolov8s.pt)
+        :param model_path: Path to the YOLOv8 weights file (e.g., custom-pretrained-yolov8s.pt)
         """
         self.model = YOLO(model_path)
 

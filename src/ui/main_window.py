@@ -53,10 +53,12 @@ class MainWindow(QMainWindow):
         self.last_scores = []
         self.last_classes = []
 
+        # Default native resolution (e.g., 720p)
+        self.current_native_resolution = (720, 480)
+
         # Access detection settings
         self.confidence_threshold = self.config['detection']['confidence_threshold']
         self.omit_classes = set(self.config['detection']['omit_classes'])  # Convert to set for fast lookups
-
 
 
     def play_video(self):
