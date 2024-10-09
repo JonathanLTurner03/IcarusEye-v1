@@ -3,16 +3,16 @@ model:
   deepsort: "models/deepsort_model.tflite"
 
 video:
-  live: true
+  live: false
   device: 0
-  source: "./input.mp4"
+  source: "test_flight.mp4"
   target_fps: 60
-  nth_frame: 10  # Adjust workload
+  nth_frame: 5  # Adjust workload
 
 detection:
-  confidence_threshold: 0.3  # Minimum confidence for displaying boxes
-  omit_classes: [59]
+  confidence_threshold: 0.0  # Minimum confidence for displaying boxes
+  omit_classes: []
 
 output:
   save_video: true
-  output_path: "outputs/detected_video.mp4"
+  output_path: "output/detected_video.mp4"

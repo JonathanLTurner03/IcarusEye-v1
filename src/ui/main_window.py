@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self.pause_button = self.findChild(QPushButton, 'stopButton')
 
         # Initialize the DetectionThread with the YOLOv8s model
-        model_path = "model/yolov8s.pt"
+        model_path = self.config['model']['yolov8s']
         self.detection_thread = DetectionThread(model_path)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
@@ -73,6 +73,11 @@ class MainWindow(QMainWindow):
         """Update the QLabel with the next frame from the VideoStream and handle detection."""
         frame = self.video_stream.get_frame()
         if frame is not None:
+            # Retrieve the frame rate from the video source
+            fps = self.video_stream.get_fps()
+            if fps > 0:
+                self.timer.setInterval(int(1000 / fps))  # Set the timer interval based on the frame rate
+
             # Increment the frame counter
             self.frame_counter += 1
 
