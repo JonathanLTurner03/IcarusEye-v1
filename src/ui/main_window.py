@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         self.pause_button = self.findChild(QPushButton, 'stopButton')
         self.video_stream = VideoStream(source)
 
-        # Timer to update frames every 30 ms (~33 FPS), but initially not started
+        # Timer to update frames every n ms, but initially not started
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
 
@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
     def play_video(self):
         """Start or resume the video stream."""
         if not self.timer.isActive():
-            self.timer.start(30)  # Start the timer to update frames every 30 ms
+            self.timer.start(17)  # Start the timer to update frames every 17 ms
 
     def pause_video(self):
         """Pause the video stream and reset QLabel."""
