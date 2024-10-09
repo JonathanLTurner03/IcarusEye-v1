@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
     def play_video(self):
         """Start or resume the video stream."""
         if not self.timer.isActive():
-            self.timer.start(17)  # Start the timer to update frames every 17 ms
+            self.timer.start(30)  # Start the timer to update frames every 17 ms
 
     def pause_video(self):
         """Pause the video stream and reset QLabel."""
