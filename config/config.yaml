@@ -7,7 +7,11 @@ video:
   device: 0
   source: "./input.mp4"
   target_fps: 60
-  nth_frame: 5  # Adjust workload
+  nth_frame: 10  # Adjust workload
+
+detection:
+  confidence_threshold: 0.3  # Minimum confidence for displaying boxes
+  omit_classes: [59]
 
 output:
   save_video: true

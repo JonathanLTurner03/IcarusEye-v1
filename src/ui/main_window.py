@@ -1,10 +1,10 @@
 import cv2
 from PyQt6.QtWidgets import QMainWindow, QLabel, QPushButton
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt, pyqtSlot
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6 import uic
 from src.video_stream import VideoStream
-from src.detection import YOLOv8Detection  # Import the detection class
+from src.threads import DetectionThread  # Import the DetectionThread
 import yaml
 
 
@@ -30,8 +30,12 @@ class MainWindow(QMainWindow):
         self.play_button = self.findChild(QPushButton, 'startButton')
         self.pause_button = self.findChild(QPushButton, 'stopButton')
 
-        # Initialize the YOLOv8s model (using the custom model)
-        self.detector = YOLOv8Detection("model/yolov8s.pt")
+        # Initialize the DetectionThread with the YOLOv8s model
+        model_path = "model/yolov8s.pt"
+        self.detection_thread = DetectionThread(model_path)
+        self.detection_thread.detection_done.connect(self.handle_detection)
+        self.detection_thread.error.connect(self.handle_error)
+        self.detection_thread.start()
 
         # Timer to update frames every 30 ms (~33 FPS), but initially not started
         self.timer = QTimer()
@@ -41,13 +45,19 @@ class MainWindow(QMainWindow):
         self.play_button.clicked.connect(self.play_video)
         self.pause_button.clicked.connect(self.pause_video)
 
-        self.frame_counter = 0 # Counter to keep track of frames
+        self.frame_counter = 0  # Counter to keep track of frames
         self.nth_frame = self.config['video']['nth_frame']  # Run detection every nth frame
 
         # Variables to store detection results for persistence
         self.last_boxes = []
         self.last_scores = []
         self.last_classes = []
+
+        # Access detection settings
+        self.confidence_threshold = self.config['detection']['confidence_threshold']
+        self.omit_classes = set(self.config['detection']['omit_classes'])  # Convert to set for fast lookups
+
+
 
     def play_video(self):
         """Start or resume the video stream."""
@@ -60,7 +70,7 @@ class MainWindow(QMainWindow):
             self.timer.stop()  # Stop the timer to pause video updates
 
     def update_frame(self):
-        """Update the QLabel with the next frame from the VideoStream and run YOLO detection every nth frame."""
+        """Update the QLabel with the next frame from the VideoStream and handle detection."""
         frame = self.video_stream.get_frame()
         if frame is not None:
             # Increment the frame counter
@@ -78,26 +88,12 @@ class MainWindow(QMainWindow):
                 # Resize the frame to the detection resolution
                 resized_frame = cv2.resize(frame, (detection_width, detection_height))
 
-                # Run detection on the resized frame
-                boxes, scores, classes = self.detector.detect(resized_frame)
+                # Send the resized frame to the detection thread
+                self.detection_thread.send_frame.emit(resized_frame)
 
-                # Calculate the scaling factors to stretch bounding boxes back to native resolution
-                scale_x = native_width / detection_width
-                scale_y = native_height / detection_height
-
-                # Rescale bounding boxes and store them for persistence
-                self.last_boxes = []
-                self.last_scores = []
-                self.last_classes = []
-                for (box, score, class_id) in zip(boxes, scores, classes):
-                    x1, y1, x2, y2 = box
-                    x1 = int(x1 * scale_x)
-                    y1 = int(y1 * scale_y)
-                    x2 = int(x2 * scale_x)
-                    y2 = int(y2 * scale_y)
-                    self.last_boxes.append([x1, y1, x2, y2])
-                    self.last_scores.append(score)
-                    self.last_classes.append(class_id)
+                # Store native resolution for scaling later
+                self.current_native_resolution = (native_width, native_height)
+            # Else, skip detection and use last_boxes
 
             # Draw the last detected bounding boxes (even on skipped frames)
             for (box, score, class_id) in zip(self.last_boxes, self.last_scores, self.last_classes):
@@ -117,7 +113,41 @@ class MainWindow(QMainWindow):
             print("Error: Unable to read the video frame or end of video")
             self.timer.stop()  # Stop the timer if the video ends
 
+    @pyqtSlot(list, list, list)
+    def handle_detection(self, boxes, scores, classes):
+        """Handle detection results emitted from the detection thread."""
+        if hasattr(self, 'current_native_resolution'):
+            native_width, native_height = self.current_native_resolution
+            detection_width = 1210
+            detection_height = 680
+
+            # Calculate the scaling factors to stretch bounding boxes back to native resolution
+            scale_x = native_width / detection_width
+            scale_y = native_height / detection_height
+
+            # Rescale bounding boxes and filter based on confidence and omitted classes
+            self.last_boxes = []
+            self.last_scores = []
+            self.last_classes = []
+            for (box, score, class_id) in zip(boxes, scores, classes):
+                # Check if the confidence is above the threshold and the class is not in omitted classes
+                if score >= self.confidence_threshold and class_id not in self.omit_classes:
+                    x1, y1, x2, y2 = box
+                    x1 = int(x1 * scale_x)
+                    y1 = int(y1 * scale_y)
+                    x2 = int(x2 * scale_x)
+                    y2 = int(y2 * scale_y)
+                    self.last_boxes.append([x1, y1, x2, y2])
+                    self.last_scores.append(score)
+                    self.last_classes.append(class_id)
+
+    @pyqtSlot(str)
+    def handle_error(self, error_msg):
+        """Handle errors emitted from the detection thread."""
+        print(error_msg)
+
     def closeEvent(self, event):
-        """Release video resources when the window is closed."""
+        """Release video resources and stop the detection thread when the window is closed."""
         self.video_stream.release()
+        self.detection_thread.stop()
         super().closeEvent(event)
