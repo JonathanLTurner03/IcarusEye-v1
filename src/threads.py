@@ -7,15 +7,17 @@ class DetectionWorker(QObject):
     detection_done = pyqtSignal(list, list, list)  # boxes, scores, classes
     error = pyqtSignal(str)
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, verbose=False):
         super().__init__()
         self.detector = YOLOv8Detection(model_path)
         self._running = True
+        self.verbose = verbose
+
 
     @pyqtSlot(object)
     def process_frame(self, frame):
         try:
-            boxes, scores, classes = self.detector.detect(frame)
+            boxes, scores, classes = self.detector.detect(frame, self.verbose)
             self.detection_done.emit(boxes, scores, classes)
         except Exception as e:
             error_msg = f"Detection Error: {str(e)}\n{traceback.format_exc()}"
@@ -32,9 +34,9 @@ class DetectionThread(QThread):
     detection_done = pyqtSignal(list, list, list)
     error = pyqtSignal(str)
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, verbose=False):
         super().__init__()
-        self.worker = DetectionWorker(model_path)
+        self.worker = DetectionWorker(model_path, verbose)
 
     def run(self):
         # Move the worker to this thread

@@ -6,7 +6,14 @@ from PyQt6 import uic
 from src.video_stream import VideoStream
 from src.threads import DetectionThread  # Import the DetectionThread
 import yaml
+import logging
 
+
+with open('config/config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+log_level = config['logging']['level']
+
+logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -26,6 +33,8 @@ class MainWindow(QMainWindow):
         source = self.config['video']['source'] \
             if not self.config['video']['live'] else self.config['video']['device']
 
+        verbose = self.config['logging']['detection_verbose']
+
         self.video_stream = VideoStream(source)
 
         # Access buttons (from the .ui file)
@@ -34,7 +43,7 @@ class MainWindow(QMainWindow):
 
         # Initialize the DetectionThread with the YOLOv8s model
         model_path = self.config['model']['yolov8s']
-        self.detection_thread = DetectionThread(model_path)
+        self.detection_thread = DetectionThread(model_path, verbose)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
         self.detection_thread.start()
@@ -97,7 +106,7 @@ class MainWindow(QMainWindow):
 
                 # Resize the frame to the detection resolution
                 resized_frame = cv2.resize(frame, (detection_height, detection_width))
-                print(f'resized_frame shape: {resized_frame.shape}')
+                logging.debug(f'resized_frame shape: {resized_frame.shape}')
 
                 # Send the resized frame to the detection thread
                 self.detection_thread.send_frame.emit(resized_frame)
@@ -127,7 +136,7 @@ class MainWindow(QMainWindow):
 
             self.video_label.setPixmap(QPixmap.fromImage(q_image))
         else:
-            print("Error: Unable to read the video frame or end of video")
+            logging.error("Error: Unable to read the video frame or end of video")
             self.timer.stop()  # Stop the timer if the video ends
 
     @pyqtSlot(list, list, list)
@@ -161,7 +170,7 @@ class MainWindow(QMainWindow):
     @pyqtSlot(str)
     def handle_error(self, error_msg):
         """Handle errors emitted from the detection thread."""
-        print(error_msg)
+        logging.error(error_msg)
 
     def closeEvent(self, event):
         """Release video resources and stop the detection thread when the window is closed."""

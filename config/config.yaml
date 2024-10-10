@@ -14,6 +14,10 @@ detection:
   confidence_threshold: 0.0  # Minimum confidence for displaying boxes
   omit_classes: []
 
+logging:
+  detection_verbose: false
+  level: 0 # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
+
 output:
   save_video: true
   output_path: "output/detected_video.mp4"
