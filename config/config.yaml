@@ -21,8 +21,8 @@ tracker:
   n_init: 3                 # Number of frames to confirm a track
 
 logging:
-  detection_verbose: false
-  level: 2  # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
+  detection_verbose: true
+  level: "DEBUG"  # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
 
 output:
   save_video: true
