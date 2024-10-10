@@ -1,5 +1,6 @@
 from ultralytics import YOLO
-
+import torch
+import torchvision.transforms as transforms
 
 class YOLOv8Detection:
     def __init__(self, model_path):
@@ -7,21 +8,30 @@ class YOLOv8Detection:
         Initialize the YOLOv8 model with the given path.
         :param model_path: Path to the YOLOv8 weights file (e.g., custom-pretrained-yolov8s.pt)
         """
-        self.model = YOLO(model_path)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f'Using device: {self.device}')
+        self.model = YOLO(model_path).to(self.device)
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((640, 640)),
+            transforms.ToTensor()
+        ])
+
 
     def detect(self, frame, verbose=False):
-        """
-        Run YOLOv8 detection on the input frame.
-        :param verbose: Use verbose mode for debugging
-        :param frame: The current video frame (numpy array)
-        :return: A list of detected bounding boxes, class labels, and confidence scores
-        """
-        # Perform inference on the frame
-        results = self.model(frame, verbose=verbose)
+        frame_tensor = self.transform(frame).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            results = self.model(frame_tensor)
+        boxes, scores, classes = self.process_detections(results)
+        return boxes, scores, classes
 
-        # Extract detections (bounding boxes, class labels, confidence scores)
-        boxes = results[0].boxes.xyxy.cpu().numpy()  # Bounding boxes (x1, y1, x2, y2)
-        scores = results[0].boxes.conf.cpu().numpy()  # Confidence scores
-        classes = results[0].boxes.cls.cpu().numpy()  # Class labels
-
+    def process_detections(self, results):
+        boxes = []
+        scores = []
+        classes = []
+        for result in results:
+            if result.boxes is not None:
+                boxes.extend(result.boxes.xyxy.cpu().numpy())
+                scores.extend(result.boxes.conf.cpu().numpy())
+                classes.extend(result.boxes.cls.cpu().numpy())
         return boxes, scores, classes

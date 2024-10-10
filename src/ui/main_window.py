@@ -4,16 +4,17 @@ from PyQt6.QtCore import QTimer, Qt, pyqtSlot
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6 import uic
 from src.video_stream import VideoStream
-from src.threads import DetectionThread, TrackingThread  # Import both threads
-from src.overlays import draw_boxes
+from src.threads import DetectionThread  # Import the DetectionThread
 import yaml
 import logging
+
 
 with open('config/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 log_level = config['logging']['level']
 
 logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -42,17 +43,11 @@ class MainWindow(QMainWindow):
         self.pause_button = self.findChild(QPushButton, 'stopButton')
 
         # Initialize the DetectionThread with the YOLOv8s model
-        model_path = self.config['model']['yolov8s_pretrained']
+        model_path = self.config['model']['yolov8s']
         self.detection_thread = DetectionThread(model_path, verbose)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
         self.detection_thread.start()
-
-        # Initialize the TrackingThread
-        self.tracking_thread = TrackingThread()
-        self.tracking_thread.tracking_done.connect(self.handle_tracking)
-        self.tracking_thread.error.connect(self.handle_error)
-        self.tracking_thread.start()
 
         # Timer to update frames every 30 ms (~33 FPS), but initially not started
         self.timer = QTimer()
@@ -70,16 +65,13 @@ class MainWindow(QMainWindow):
         self.last_scores = []
         self.last_classes = []
 
-        # Variables to store tracking results
-        self.tracked_boxes = []
-        self.track_ids = []
-
-        # Default native resolution (e.g., 1080p)
+        # Default native resolution (e.g., 720p)
         self.current_native_resolution = (1920, 1080)
 
         # Access detection settings
         self.confidence_threshold = self.config['detection']['confidence_threshold']
         self.omit_classes = set(self.config['detection']['omit_classes'])  # Convert to set for fast lookups
+
 
     def play_video(self):
         """Start or resume the video stream."""
@@ -105,12 +97,33 @@ class MainWindow(QMainWindow):
 
             # Only run detection every nth frame
             if self.frame_counter % self.nth_frame == 0:
-                logging.debug("Sending frame for detection")
-                self.detection_thread.send_frame.emit(frame)  # Send frame for detection
+                # Get the native resolution of the frame
+                native_height, native_width = frame.shape[:2]
+
+
+                # Desired detection resolution (e.g., 680p)
+                detection_width = 640  # Width corresponding to 680p
+                detection_height = 640
+
+                # Resize the frame to the detection resolution
+                resized_frame = cv2.resize(frame, (detection_width, detection_height))
+                logging.debug(f'resized_frame shape: {resized_frame.shape}')
+
+                # Send the resized frame to the detection thread
+                self.detection_thread.send_frame.emit(resized_frame)
+
+                # Store native resolution for scaling later
+                self.current_native_resolution = (native_width, native_height)
+            # Else, skip detection and use last_boxes
 
             # Draw the last detected bounding boxes (even on skipped frames)
-            if hasattr(self, 'tracked_boxes') and hasattr(self, 'track_ids'):
-                frame = draw_boxes(frame, self.tracked_boxes, self.track_ids)
+            for (box, score, class_id) in zip(self.last_boxes, self.last_scores, self.last_classes):
+                x1, y1, x2, y2 = box
+                # Draw the bounding box and label
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                label = f"Class: {int(class_id)}, Confidence: {score:.2f}"
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                            (0, 255, 0), 2)
 
             # Convert the frame to QImage for displaying in QLabel
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -127,42 +140,41 @@ class MainWindow(QMainWindow):
             logging.error("Error: Unable to read the video frame or end of video")
             self.timer.stop()  # Stop the timer if the video ends
 
+    @pyqtSlot(list, list, list)
+    def handle_detection(self, boxes, scores, classes):
+        """Handle detection results emitted from the detection thread."""
+        if hasattr(self, 'current_native_resolution'):
+            native_width, native_height = self.current_native_resolution
+            detection_width = 640  # The width after resizing in the detection model
+            detection_height = 640  # The height after resizing in the detection model
 
+            # Calculate the scaling factors to stretch bounding boxes back to native resolution
+            scale_x = native_width / detection_width
+            scale_y = native_height / detection_height
 
-    @pyqtSlot(list, list, list, object)
-    def handle_detection(self, boxes, scores, classes, frame):
-        """Handle detection results and pass them to DeepSORT for tracking."""
-
-        # Filter based on confidence and omitted classes
-        self.last_boxes = []
-        self.last_scores = []
-        self.last_classes = []
-        for (box, score, class_id) in zip(boxes, scores, classes):
-            if score >= self.confidence_threshold and class_id not in self.omit_classes:
-                self.last_boxes.append(box)
-                self.last_scores.append(score)
-                self.last_classes.append(class_id)
-
-        # Send the detection results and frame to the tracking thread
-        self.tracking_thread.send_detection.emit(self.last_boxes, self.last_scores, self.last_classes, frame)
-
-    @pyqtSlot(list, list)
-    def handle_tracking(self, tracked_boxes, track_ids):
-        print(f"Tracking received: {len(tracked_boxes)} boxes, {len(track_ids)} track IDs")
-
-        # Update instance variables
-        self.tracked_boxes = tracked_boxes
-        self.track_ids = track_ids
-
+            # Rescale bounding boxes and filter based on confidence and omitted classes
+            self.last_boxes = []
+            self.last_scores = []
+            self.last_classes = []
+            for (box, score, class_id) in zip(boxes, scores, classes):
+                # Check if the confidence is above the threshold and the class is not in omitted classes
+                if score >= self.confidence_threshold and class_id not in self.omit_classes:
+                    x1, y1, x2, y2 = box
+                    x1 = int(x1 * scale_x)
+                    y1 = int(y1 * scale_y)
+                    x2 = int(x2 * scale_x)
+                    y2 = int(y2 * scale_y)
+                    self.last_boxes.append([x1, y1, x2, y2])
+                    self.last_scores.append(score)
+                    self.last_classes.append(class_id)
 
     @pyqtSlot(str)
     def handle_error(self, error_msg):
-        """Handle errors emitted from the detection or tracking thread."""
+        """Handle errors emitted from the detection thread."""
         logging.error(error_msg)
 
     def closeEvent(self, event):
-        """Release video resources and stop the detection and tracking threads when the window is closed."""
+        """Release video resources and stop the detection thread when the window is closed."""
         self.video_stream.release()
         self.detection_thread.stop()
-        self.tracking_thread.stop()
         super().closeEvent(event)
