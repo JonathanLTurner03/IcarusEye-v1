@@ -1,7 +1,7 @@
 model:
   yolov8s: "models/yolov8s.pt"
   yolov8s_pretrained: "models/pretrained-yolov8s.pt"
-  deepsort: "models/deepsort_model.tflite"
+  deepsort: "models/deepsort/mars-small128.pb"  # Path to DeepSORT embedder model
 
 video:
   live: true
@@ -11,12 +11,18 @@ video:
   nth_frame: 5  # Adjust workload
 
 detection:
-  confidence_threshold: 0.0  # Minimum confidence for displaying boxes
+  confidence_threshold: 0.5  # Minimum confidence for displaying boxes
   omit_classes: []
+
+tracker:
+  max_cosine_distance: 0.2  # Max cosine distance for association
+  nn_budget: 100            # Maximum size of the feature extractor queue
+  max_age: 30               # Maximum number of missed detections before a track is deleted
+  n_init: 3                 # Number of frames to confirm a track
 
 logging:
   detection_verbose: false
-  level: 2 # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
+  level: 2  # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
 
 output:
   save_video: true
