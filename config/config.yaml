@@ -1,6 +1,6 @@
 model:
   yolov8s: "models/yolov8s.pt"
-  yolov8s_pretrained: "models/yolov8s_pretrained.pt"
+  yolov8s_pretrained: "models/pretrained-yolov8s.pt"
   deepsort: "models/deepsort_model.tflite"
 
 video:

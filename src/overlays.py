@@ -1,8 +1,13 @@
 import cv2
 import logging
+import yaml
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+with open('config/config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+log_level = config['logging']['level']
+
+logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def draw_boxes(frame, boxes, scores, classes, class_names, confidence_threshold=0.5, box_color=(0, 255, 0), text_color=(255, 255, 255)):
     """
