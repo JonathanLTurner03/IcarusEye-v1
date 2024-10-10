@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.pause_button = self.findChild(QPushButton, 'stopButton')
 
         # Initialize the DetectionThread with the YOLOv8s model
-        model_path = self.config['model']['yolov8s']
+        model_path = self.config['model']['yolov8s_pretrained']
         self.detection_thread = DetectionThread(model_path, verbose)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
                 detection_height = 680
 
                 # Resize the frame to the detection resolution
-                resized_frame = cv2.resize(frame, (detection_height, detection_width))
+                resized_frame = cv2.resize(frame, (detection_width, detection_height))
                 logging.debug(f'resized_frame shape: {resized_frame.shape}')
 
                 # Send the resized frame to the detection thread

@@ -1,8 +1,13 @@
 import cv2
 import logging
+import yaml
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+with open('config/config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+log_level = config['logging']['level']
+
+logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def draw_boxes(frame, boxes, scores, classes, class_names, confidence_threshold=0.5, box_color=(0, 255, 0), text_color=(255, 255, 255)):
     """
@@ -21,7 +26,7 @@ def draw_boxes(frame, boxes, scores, classes, class_names, confidence_threshold=
         if score >= confidence_threshold:
             x1, y1, x2, y2 = box
             # Debugging: Print box coordinates
-            logging.log(f"Drawing box: ({x1}, {y1}, {x2}, {y2}) with score {score}")
+            logging.debug(f"Drawing box: ({x1}, {y1}, {x2}, {y2}) with score {score}")
 
             # Draw the bounding box
             cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 2)
@@ -31,7 +36,7 @@ def draw_boxes(frame, boxes, scores, classes, class_names, confidence_threshold=
             label = f"{class_name}: {score:.2f}"
 
             # Debugging: Print the label
-            logging.log(f"Label: {label}")
+            logging.debug(f"Label: {label}")
 
             # Draw the label above the bounding box
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)

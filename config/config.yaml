@@ -1,13 +1,13 @@
 model:
   yolov8s: "models/yolov8s.pt"
-  yolov8s_pretrained: "models/yolov8s_pretrained.pt"
+  yolov8s_pretrained: "models/pretrained-yolov8s.pt"
   deepsort: "models/deepsort_model.tflite"
 
 video:
   live: true
   device: 0
   source: "test_flight.mp4"
-  target_fps: 60
+  target_fps: 30
   nth_frame: 5  # Adjust workload
 
 detection:
@@ -16,7 +16,7 @@ detection:
 
 logging:
   detection_verbose: false
-  level: 0 # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
+  level: 2 # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
 
 output:
   save_video: true
