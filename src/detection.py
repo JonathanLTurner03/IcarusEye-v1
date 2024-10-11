@@ -2,6 +2,8 @@ from ultralytics import YOLO
 import torch
 import torchvision.transforms as transforms
 
+
+# TODO: Add documentation and comments
 class YOLOv8Detection:
     def __init__(self, model_path, verbose=False):
         """
@@ -24,6 +26,7 @@ class YOLOv8Detection:
             results = self.model(frame_tensor, verbose=verbose)
         boxes, scores, classes = self.process_detections(results)
         return boxes, scores, classes
+
 
     def process_detections(self, results):
         boxes = []

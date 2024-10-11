@@ -17,6 +17,7 @@ log_level = config['logging']['level']
 logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+# TODO add documentation and comments
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()

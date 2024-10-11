@@ -1,7 +1,6 @@
 from PyQt6.QtCore import QThread, pyqtSignal, QObject, pyqtSlot
 import torch
 from src.detection import YOLOv8Detection
-from src.tracking import Tracker
 import traceback
 import logging
 import cv2
@@ -9,6 +8,7 @@ import cv2
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+# TODO add documentation and comments
 class DetectionWorker(QObject):
     detection_done = pyqtSignal(list, list, list, object)  # boxes, scores, classes
     error = pyqtSignal(str)
@@ -36,11 +36,11 @@ class DetectionWorker(QObject):
             error_msg = f"Detection Error: {str(e)}\n{traceback.format_exc()}"
             self.error.emit(error_msg)
 
-
-
     def stop(self):
         self._running = False
 
+
+# TODO add documentation and comments
 class DetectionThread(QThread):
     # Signal to send frames to the worker
     send_frame = pyqtSignal(object)

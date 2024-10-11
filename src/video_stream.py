@@ -1,9 +1,10 @@
 import cv2
 import logging
 
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+# TODO add documentation and comments
 class VideoStream:
     def __init__(self, source=0, width=1920, height=1080):
         self.cap = cv2.VideoCapture(source)

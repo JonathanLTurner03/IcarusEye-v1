@@ -10,6 +10,7 @@ log_level = config['logging']['level']
 logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+# TODO add documentation and comments
 def draw_boxes(frame, boxes, scores, classes, class_names, colors, confidence_threshold=0.5, text_color=(255, 255, 255), thickness=3, alpha=0.3, max_labels=5):
     """
     Draw bounding boxes with class-specific colors and solid corners.
