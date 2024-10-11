@@ -3,14 +3,14 @@ import torch
 import torchvision.transforms as transforms
 
 class YOLOv8Detection:
-    def __init__(self, model_path):
+    def __init__(self, model_path, verbose=False):
         """
         Initialize the YOLOv8 model with the given path.
         :param model_path: Path to the YOLOv8 weights file (e.g., custom-pretrained-yolov8s.pt)
         """
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f'Using device: {self.device}')
-        self.model = YOLO(model_path).to(self.device)
+        self.model = YOLO(model_path, verbose=verbose).to(self.device)
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((640, 640)),
@@ -21,7 +21,7 @@ class YOLOv8Detection:
     def detect(self, frame, verbose=False):
         frame_tensor = self.transform(frame).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            results = self.model(frame_tensor)
+            results = self.model(frame_tensor, verbose=verbose)
         boxes, scores, classes = self.process_detections(results)
         return boxes, scores, classes
 

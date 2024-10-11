@@ -9,6 +9,7 @@ video:
   source: "goggles_test.mp4"
   target_fps: 30
   nth_frame: 3  # Adjust workload
+  max_labels: 5
 
 detection:
   confidence_threshold: 0.2  # Minimum confidence for displaying boxes
@@ -21,9 +22,33 @@ tracker:
   n_init: 3                 # Number of frames to confirm a track
 
 logging:
-  detection_verbose: true
-  level: "DEBUG"  # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
+  detection_verbose: false
+  level: "WARNING"  # 0: OFF, 1: DEBUG, 2: INFO, 3: WARNING
 
 output:
   save_video: true
   output_path: "output/detected_video.mp4"
+
+class_names:
+  0: pedestrian
+  1: people
+  2: bicycle
+  3: car
+  4: van
+  5: truck
+  6: tricycle
+  7: awning-tricycle
+  8: bus
+  9: motor
+
+colors:
+  0: [255, 125, 0]
+  1: [255, 125, 0]
+  2: [255, 125, 0]
+  3: [0, 255, 0]
+  4: [0, 255, 0]
+  5: [0, 255, 0]
+  6: [0, 255, 0]
+  7: [0, 255, 0]
+  8: [0, 255, 0]
+  9: [0, 255, 0]

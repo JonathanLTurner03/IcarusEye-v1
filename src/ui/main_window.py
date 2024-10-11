@@ -5,6 +5,7 @@ from PyQt6.QtGui import QPixmap, QImage
 from PyQt6 import uic
 from src.video_stream import VideoStream
 from src.threads import DetectionThread  # Import the DetectionThread
+from src.overlays import draw_boxes
 import yaml
 import logging
 
@@ -70,6 +71,7 @@ class MainWindow(QMainWindow):
 
         # Access detection settings
         self.confidence_threshold = self.config['detection']['confidence_threshold']
+        self.max_labels = self.config['video']['max_labels']
         self.omit_classes = set(self.config['detection']['omit_classes'])  # Convert to set for fast lookups
 
 
@@ -116,14 +118,9 @@ class MainWindow(QMainWindow):
                 self.current_native_resolution = (native_width, native_height)
             # Else, skip detection and use last_boxes
 
-            # Draw the last detected bounding boxes (even on skipped frames)
-            for (box, score, class_id) in zip(self.last_boxes, self.last_scores, self.last_classes):
-                x1, y1, x2, y2 = box
-                # Draw the bounding box and label
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                label = f"Class: {int(class_id)}, Confidence: {score:.2f}"
-                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (0, 255, 0), 2)
+            frame = draw_boxes(frame, self.last_boxes, self.last_scores, self.last_classes, self.config['class_names'],
+                               confidence_threshold=self.confidence_threshold, max_labels=self.max_labels,
+                               colors=self.config['colors'])
 
             # Convert the frame to QImage for displaying in QLabel
             rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
