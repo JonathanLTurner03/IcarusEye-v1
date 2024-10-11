@@ -28,11 +28,14 @@ class OpenGLVideoWidget(QOpenGLWidget):
 
     def paintGL(self):
         """Render the current frame and bounding boxes."""
-        print("Calling paintGL...")  # Log when paintGL is called
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
         # Render the latest uploaded texture (video frame)
         self.draw_texture()  # Ensure draw_texture is called here
+
+        # Draw the bounding boxes if they exist
+        if self.bounding_boxes:
+            self.draw_bounding_boxes()  # Call to draw bounding boxes
 
         # Check for OpenGL errors
         error = gl.glGetError()
@@ -40,6 +43,8 @@ class OpenGLVideoWidget(QOpenGLWidget):
             print(f"OpenGL Error: {error}")
 
     def upload_frame_to_opengl(self, frame):
+
+        self.image = frame
         """Upload the captured frame to OpenGL as a texture."""
         frame_rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)  # Convert to RGBA format
 
@@ -61,21 +66,13 @@ class OpenGLVideoWidget(QOpenGLWidget):
         # Bind the texture for rendering
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
 
-        # Check if texture ID is valid
-        if self.texture_id == 0:
-            print("Texture ID is invalid!")
-            return
-
         # Draw the textured quad
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(0, 0);
-        gl.glVertex3f(-1, -1, 0)
-        gl.glTexCoord2f(1, 0);
-        gl.glVertex3f(1, -1, 0)
-        gl.glTexCoord2f(1, 1);
-        gl.glVertex3f(1, 1, 0)
-        gl.glTexCoord2f(0, 1);
-        gl.glVertex3f(-1, 1, 0)
+        # Adjust texture coordinates to flip vertically
+        gl.glTexCoord2f(0, 1); gl.glVertex3f(-1, -1, 0)  # Bottom left
+        gl.glTexCoord2f(1, 1); gl.glVertex3f(1, -1, 0)  # Bottom right
+        gl.glTexCoord2f(1, 0); gl.glVertex3f(1, 1, 0)  # Top right
+        gl.glTexCoord2f(0, 0); gl.glVertex3f(-1, 1, 0)  # Top left
         gl.glEnd()
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)  # Unbind texture after drawing
@@ -85,6 +82,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
         frame = self.video_stream.get_frame()
         if frame is not None:
             self.frame_counter += 1
+            self.image = frame
 
             # Upload the captured frame to OpenGL
             self.upload_frame_to_opengl(frame)
@@ -96,16 +94,22 @@ class OpenGLVideoWidget(QOpenGLWidget):
             self.timer.stop()  # Stop the timer if the video ends
 
     def draw_bounding_boxes(self):
+        if self.image is None:
+            print("No image available for drawing bounding boxes.")
+            return  # Exit if image is not available
+
         """Draw the bounding boxes based on current detection results."""
-        for box, score, class_id in self.bounding_boxes:
+        for (box, score, class_id) in self.bounding_boxes:
+            print(f"Drawing box: {box} with score {score} for class {class_id}")
             color = (0.0, 1.0, 0.0, 0.5)  # Green with transparency for high confidence
             gl.glColor4f(color[0], color[1], color[2], color[3])  # Set the color with alpha
 
             x1, y1, x2, y2 = box
-            x1_ndc = (x1 / self.image.width()) * 2 - 1
-            y1_ndc = 1 - (y1 / self.image.height()) * 2
-            x2_ndc = (x2 / self.image.width()) * 2 - 1
-            y2_ndc = 1 - (y2 / self.image.height()) * 2
+            # Convert to normalized device coordinates
+            x1_ndc = (x1 / self.image.shape[1]) * 2 - 1
+            y1_ndc = 1 - (y1 / self.image.shape[0]) * 2
+            x2_ndc = (x2 / self.image.shape[1]) * 2 - 1
+            y2_ndc = 1 - (y2 / self.image.shape[0]) * 2
 
             # Draw filled rectangle for the transparent overlay
             gl.glBegin(gl.GL_QUADS)
@@ -115,7 +119,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
             gl.glVertex2f(x1_ndc, y2_ndc)
             gl.glEnd()
 
-            # Now draw the outline
+            # Draw the outline
             gl.glColor3f(1.0, 1.0, 1.0)  # Set outline color to white
             gl.glBegin(gl.GL_LINE_LOOP)
             gl.glVertex2f(x1_ndc, y1_ndc)
@@ -123,3 +127,4 @@ class OpenGLVideoWidget(QOpenGLWidget):
             gl.glVertex2f(x2_ndc, y2_ndc)
             gl.glVertex2f(x1_ndc, y2_ndc)
             gl.glEnd()
+

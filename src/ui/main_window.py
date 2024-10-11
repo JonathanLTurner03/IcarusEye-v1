@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.video_stream = VideoStream(source)
 
         # Initialize the DetectionThread with the YOLOv8s model
-        model_path = self.config['model']['yolov8s']
+        model_path = self.config['model']['yolov8s_pretrained']
         self.detection_thread = DetectionThread(model_path, verbose)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
@@ -100,7 +100,13 @@ class MainWindow(QMainWindow):
         """Update the OpenGL widget with the next frame from the VideoStream."""
         frame = self.video_stream.get_frame()
         if frame is not None:
+            print(f"Captured frame shape: {frame.shape}")  # Log the frame shape
             self.frame_counter += 1
+
+            # Only run detection every nth frame
+            if self.frame_counter % self.nth_frame == 0:
+                # Send frame to detection thread
+                self.detection_thread.send_frame.emit(frame)
 
             # Upload the captured frame to OpenGL
             self.video_widget.upload_frame_to_opengl(frame)
@@ -123,6 +129,7 @@ class MainWindow(QMainWindow):
             scale_x = native_width / detection_width
             scale_y = native_height / detection_height
 
+
             # Rescale bounding boxes and filter based on confidence and omitted classes
             self.last_boxes = []
             self.last_scores = []
@@ -135,13 +142,15 @@ class MainWindow(QMainWindow):
                     y1 = int(y1 * scale_y)
                     x2 = int(x2 * scale_x)
                     y2 = int(y2 * scale_y)
+
+                    # Append bounding box, score, and class ID
                     self.last_boxes.append([x1, y1, x2, y2])
                     self.last_scores.append(score)
                     self.last_classes.append(class_id)
 
             # Update the OpenGL widget with the new detection results
-            self.video_widget.bounding_boxes = self.last_boxes  # Update bounding boxes for OpenGL widget
-
+            self.video_widget.bounding_boxes = list(
+                zip(self.last_boxes, self.last_scores, self.last_classes))  # Update bounding boxes for OpenGL widget
 
     @pyqtSlot(str)
     def handle_error(self, error_msg):
