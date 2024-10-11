@@ -1,9 +1,10 @@
 import cv2
-from PyQt6.QtWidgets import QMainWindow, QLabel, QPushButton
+from PyQt6.QtWidgets import QMainWindow, QLabel, QPushButton, QVBoxLayout
 from PyQt6.QtCore import QTimer, Qt, pyqtSlot
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6 import uic
 from src.video_stream import VideoStream
+from src.opengl_video_widget import OpenGLVideoWidget  # Import your OpenGL widget
 from src.threads import DetectionThread  # Import the DetectionThread
 from src.overlays import draw_boxes
 import yaml
@@ -40,16 +41,25 @@ class MainWindow(QMainWindow):
 
         self.video_stream = VideoStream(source)
 
-        # Access buttons (from the .ui file)
-        self.play_button = self.findChild(QPushButton, 'startButton')
-        self.pause_button = self.findChild(QPushButton, 'stopButton')
-
         # Initialize the DetectionThread with the YOLOv8s model
         model_path = self.config['model']['yolov8s']
         self.detection_thread = DetectionThread(model_path, verbose)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
         self.detection_thread.start()
+
+        # Access buttons (from the .ui file)
+        self.play_button = self.findChild(QPushButton, 'startButton')
+        self.pause_button = self.findChild(QPushButton, 'stopButton')
+
+        # Create an instance of the OpenGL widget and replace the QLabel
+        self.video_widget = OpenGLVideoWidget(self)
+        self.videoLayout = self.findChild(QVBoxLayout, 'videoLayout')  # Assuming you have a layout
+        self.videoLayout.addWidget(self.video_widget)  # Add OpenGL widget to the layout
+
+        # Remove the QLabel if necessary
+        self.videoLabel = self.findChild(QLabel, 'videoLabel')
+        self.videoLabel.setVisible(False)  # Optionally hide the original QLabel
 
         # Timer to update frames every 30 ms (~33 FPS), but initially not started
         self.timer = QTimer()
@@ -87,55 +97,18 @@ class MainWindow(QMainWindow):
             self.timer.stop()  # Stop the timer to pause video updates
 
     def update_frame(self):
-        """Update the QLabel with the next frame from the VideoStream and handle detection."""
+        """Update the OpenGL widget with the next frame from the VideoStream."""
         frame = self.video_stream.get_frame()
         if frame is not None:
-            # Retrieve the frame rate from the video source
-            fps = self.video_stream.get_fps()
-            if fps > 0:
-                self.timer.setInterval(int(1000 / fps))  # Set the timer interval based on the frame rate
-
-            # Increment the frame counter
             self.frame_counter += 1
 
-            # Only run detection every nth frame
-            if self.frame_counter % self.nth_frame == 0:
-                # Get the native resolution of the frame
-                native_height, native_width = frame.shape[:2]
+            # Upload the captured frame to OpenGL
+            self.video_widget.upload_frame_to_opengl(frame)
 
-
-                # Desired detection resolution (e.g., 680p)
-                detection_width = 640  # Width corresponding to 680p
-                detection_height = 640
-
-                # Resize the frame to the detection resolution
-                resized_frame = cv2.resize(frame, (detection_width, detection_height))
-                logging.debug(f'resized_frame shape: {resized_frame.shape}')
-
-                # Send the resized frame to the detection thread
-                self.detection_thread.send_frame.emit(resized_frame)
-
-                # Store native resolution for scaling later
-                self.current_native_resolution = (native_width, native_height)
-            # Else, skip detection and use last_boxes
-
-            frame = draw_boxes(frame, self.last_boxes, self.last_scores, self.last_classes, self.config['class_names'],
-                               confidence_threshold=self.confidence_threshold, max_labels=self.max_labels,
-                               colors=self.config['colors'])
-
-            # Convert the frame to QImage for displaying in QLabel
-            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = rgb_image.shape
-            bytes_per_line = ch * w
-            q_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-
-            # Scale the QImage to fit within the QLabel while maintaining aspect ratio
-            q_image = q_image.scaled(self.video_label.size(), Qt.AspectRatioMode.KeepAspectRatio,
-                                     Qt.TransformationMode.SmoothTransformation)
-
-            self.video_label.setPixmap(QPixmap.fromImage(q_image))
+            # Trigger a repaint
+            self.video_widget.update()  # This will call paintGL
         else:
-            logging.error("Error: Unable to read the video frame or end of video")
+            print("Error: Unable to read the video frame or end of video")
             self.timer.stop()  # Stop the timer if the video ends
 
     @pyqtSlot(list, list, list)
@@ -165,6 +138,10 @@ class MainWindow(QMainWindow):
                     self.last_boxes.append([x1, y1, x2, y2])
                     self.last_scores.append(score)
                     self.last_classes.append(class_id)
+
+            # Update the OpenGL widget with the new detection results
+            self.video_widget.bounding_boxes = self.last_boxes  # Update bounding boxes for OpenGL widget
+
 
     @pyqtSlot(str)
     def handle_error(self, error_msg):
