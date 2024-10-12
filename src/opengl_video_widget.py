@@ -33,8 +33,6 @@ class OpenGLVideoWidget(QOpenGLWidget):
         # Render the latest uploaded texture (video frame)
         self.draw_texture()  # Ensure draw_texture is called here
 
-        self.draw_static_square()
-
         # Draw the bounding boxes if they exist
         if self.bounding_boxes:
             self.draw_bounding_boxes()  # Call to draw bounding boxes
@@ -45,10 +43,12 @@ class OpenGLVideoWidget(QOpenGLWidget):
             print(f"OpenGL Error: {error}")
 
     def upload_frame_to_opengl(self, frame):
-
-        self.image = frame
         """Upload the captured frame to OpenGL as a texture."""
+        self.image = frame
         frame_rgba = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)  # Convert to RGBA format
+
+        if self.texture_id is None:
+            self.texture_id = gl.glGenTextures(1)
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, frame_rgba.shape[1], frame_rgba.shape[0], 0, gl.GL_RGBA,
@@ -70,41 +70,17 @@ class OpenGLVideoWidget(QOpenGLWidget):
 
         # Draw the textured quad
         gl.glBegin(gl.GL_QUADS)
+
         # Adjust texture coordinates to flip vertically
-        gl.glTexCoord2f(0, 1); gl.glVertex3f(-1, -1, 0)  # Bottom left
-        gl.glTexCoord2f(1, 1); gl.glVertex3f(1, -1, 0)  # Bottom right
-        gl.glTexCoord2f(1, 0); gl.glVertex3f(1, 1, 0)  # Top right
-        gl.glTexCoord2f(0, 0); gl.glVertex3f(-1, 1, 0)  # Top left
+        gl.glTexCoord2f(0, 1); gl.glVertex3f(-1, -1, 0)        # Bottom left
+        gl.glTexCoord2f(1, 1); gl.glVertex3f(1, -1, 0)      # Bottom right
+        gl.glTexCoord2f(1, 0); gl.glVertex3f(1, 1, 0)    # Top right
+        gl.glTexCoord2f(0, 0); gl.glVertex3f(-1, 1, 0)      # Top left
         gl.glEnd()
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)  # Unbind texture after drawing
 
-    def update_frame(self):
-        """Update the OpenGL widget with the next frame from the VideoStream."""
-        frame = self.video_stream.get_frame()
-        if frame is not None:
-            self.frame_counter += 1
-            self.image = frame
-
-            # Upload the captured frame to OpenGL
-            self.upload_frame_to_opengl(frame)
-
-            # Update the OpenGL widget with the current frame
-            self.video_widget.update_frame(frame)
-        else:
-            print("Error: Unable to read the video frame or end of video")
-            self.timer.stop()  # Stop the timer if the video ends
-
-    def draw_static_square(self):
-        """Draw a static square overlay."""
-        gl.glColor4f(1.0, 0.0, 0.0, 0.5)  # Set color to red with transparency
-        gl.glBegin(gl.GL_QUADS)
-        gl.glVertex2f(-0.5, -0.5)
-        gl.glVertex2f(0.5, -0.5)
-        gl.glVertex2f(0.5, 0.5)
-        gl.glVertex2f(-0.5, 0.5)
-        gl.glEnd()
-
+    # TODO: Switched to NDC
     def draw_bounding_boxes(self):
         if self.image is None:
             print("No image available for drawing bounding boxes.")
