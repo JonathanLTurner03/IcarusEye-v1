@@ -33,6 +33,8 @@ class OpenGLVideoWidget(QOpenGLWidget):
         # Render the latest uploaded texture (video frame)
         self.draw_texture()  # Ensure draw_texture is called here
 
+        self.draw_static_square()
+
         # Draw the bounding boxes if they exist
         if self.bounding_boxes:
             self.draw_bounding_boxes()  # Call to draw bounding boxes
@@ -93,6 +95,16 @@ class OpenGLVideoWidget(QOpenGLWidget):
             print("Error: Unable to read the video frame or end of video")
             self.timer.stop()  # Stop the timer if the video ends
 
+    def draw_static_square(self):
+        """Draw a static square overlay."""
+        gl.glColor4f(1.0, 0.0, 0.0, 0.5)  # Set color to red with transparency
+        gl.glBegin(gl.GL_QUADS)
+        gl.glVertex2f(-0.5, -0.5)
+        gl.glVertex2f(0.5, -0.5)
+        gl.glVertex2f(0.5, 0.5)
+        gl.glVertex2f(-0.5, 0.5)
+        gl.glEnd()
+
     def draw_bounding_boxes(self):
         if self.image is None:
             print("No image available for drawing bounding boxes.")
@@ -111,6 +123,13 @@ class OpenGLVideoWidget(QOpenGLWidget):
             x2_ndc = (x2 / self.image.shape[1]) * 2 - 1
             y2_ndc = 1 - (y2 / self.image.shape[0]) * 2
 
+            print(f"Converted NDC coordinates: ({x1_ndc}, {y1_ndc}), ({x2_ndc}, {y2_ndc})")
+
+            # Ensure the OpenGL state is set correctly
+            gl.glDisable(gl.GL_TEXTURE_2D)  # Disable texturing
+            gl.glEnable(gl.GL_BLEND)  # Enable blending
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)  # Set blend function
+
             # Draw filled rectangle for the transparent overlay
             gl.glBegin(gl.GL_QUADS)
             gl.glVertex2f(x1_ndc, y1_ndc)
@@ -127,4 +146,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
             gl.glVertex2f(x2_ndc, y2_ndc)
             gl.glVertex2f(x1_ndc, y2_ndc)
             gl.glEnd()
+
+            # Restore OpenGL state
+            gl.glEnable(gl.GL_TEXTURE_2D)  # Re-enable texturing
 
