@@ -5,6 +5,7 @@ import OpenGL.GL as gl
 import numpy as np
 import cv2
 
+
 class OpenGLVideoWidget(QOpenGLWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -20,22 +21,56 @@ class OpenGLVideoWidget(QOpenGLWidget):
         gl.glClearColor(0, 0, 0, 1)  # Set clear color to black
         gl.glEnable(gl.GL_DEPTH_TEST)  # Enable depth testing if needed
         gl.glEnable(gl.GL_TEXTURE_2D)  # Ensure texturing is enabled
+        # Query and print OpenGL info (Vendor, Renderer, and Version)
+        vendor = gl.glGetString(gl.GL_VENDOR).decode('utf-8')
+        renderer = gl.glGetString(gl.GL_RENDERER).decode('utf-8')
+        version = gl.glGetString(gl.GL_VERSION).decode('utf-8')
+
+        print(f"OpenGL Vendor: {vendor}")
+        print(f"OpenGL Renderer: {renderer}")
+        print(f"OpenGL Version: {version}")
 
     def resizeGL(self, width, height):
-        """Adjust the viewport and projection."""
-        print(f"OpenGL widget resized to: {width}x{height}")  # Log resize events
-        gl.glViewport(0, 0, width, height)
+        """Adjust the viewport to maintain the aspect ratio of the video."""
+        print(f"OpenGL widget resized to: {width}x{height}")
+
+        if self.image is not None:
+            # Get the aspect ratio of the video frame
+            video_width, video_height = self.image.shape[1], self.image.shape[0]
+            video_aspect = video_width / video_height
+
+            # Get the aspect ratio of the available widget area
+            widget_aspect = width / height
+
+            # Calculate the scaling factor and the dimensions that respect the aspect ratio
+            if widget_aspect > video_aspect:
+                # Window is wider than the video aspect ratio
+                scaled_width = int(height * video_aspect)
+                scaled_height = height
+            else:
+                # Window is taller than the video aspect ratio
+                scaled_width = width
+                scaled_height = int(width / video_aspect)
+
+            # Center the viewport in the available window
+            x_offset = (width - scaled_width) // 2
+            y_offset = (height - scaled_height) // 2
+
+            # Set the viewport to the calculated dimensions
+            gl.glViewport(x_offset, y_offset, scaled_width, scaled_height)
+        else:
+            # If no image is loaded, just fill the whole window
+            gl.glViewport(0, 0, width, height)
 
     def paintGL(self):
         """Render the current frame and bounding boxes."""
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        # Render the latest uploaded texture (video frame)
-        self.draw_texture()  # Ensure draw_texture is called here
+        # Reset the color to white before drawing the texture
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
 
-        # Draw the bounding boxes if they exist
-        if self.bounding_boxes:
-            self.draw_bounding_boxes()  # Call to draw bounding boxes
+        # Render the texture and bounding boxes together
+        self.draw_texture_and_bounding_boxes()
 
         # Check for OpenGL errors
         error = gl.glGetError()
@@ -49,80 +84,127 @@ class OpenGLVideoWidget(QOpenGLWidget):
 
         if self.texture_id is None:
             self.texture_id = gl.glGenTextures(1)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, frame_rgba.shape[1], frame_rgba.shape[0], 0, gl.GL_RGBA,
+                            gl.GL_UNSIGNED_BYTE, frame_rgba)
+            # Set texture parameters (if not already set)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
+        else:
+            # Only update the texture data without reallocating memory
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
+            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, frame_rgba.shape[1], frame_rgba.shape[0], gl.GL_RGBA,
+                               gl.GL_UNSIGNED_BYTE, frame_rgba)
 
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, frame_rgba.shape[1], frame_rgba.shape[0], 0, gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE, frame_rgba)
-
-        # Set texture parameters (if not already set)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
-
-    def draw_texture(self):
-        """Draw the uploaded texture (video frame) on the screen."""
-        if self.texture_id is None:
-            self.texture_id = gl.glGenTextures(1)
+    def draw_texture_and_bounding_boxes(self):
+        """Draw the uploaded texture (video frame) and bounding boxes on the screen."""
+        if self.texture_id is None or self.image is None:
+            return  # No texture to draw
 
         # Bind the texture for rendering
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
 
+        # Get the aspect ratio of the video frame
+        video_width, video_height = self.image.shape[1], self.image.shape[0]
+        video_aspect = video_width / video_height
+
+        # Get the aspect ratio of the widget
+        widget_width, widget_height = self.width(), self.height()
+        widget_aspect = widget_width / widget_height
+
+        # Compute scaling factors and offsets to maintain aspect ratio
+        if widget_aspect > video_aspect:
+            # Widget is wider than the video, scale by height
+            scale = widget_height / video_height
+            scaled_width = video_width * scale
+            scaled_height = widget_height
+            x_offset = (widget_width - scaled_width) / 2
+            y_offset = 0
+        else:
+            # Widget is taller than the video, scale by width
+            scale = widget_width / video_width
+            scaled_width = widget_width
+            scaled_height = video_height * scale
+            x_offset = 0
+            y_offset = (widget_height - scaled_height) / 2
+
+        # Set viewport based on calculated scaled dimensions and offsets
+        gl.glViewport(int(x_offset), int(y_offset), int(scaled_width), int(scaled_height))
+
         # Draw the textured quad
         gl.glBegin(gl.GL_QUADS)
 
-        # Adjust texture coordinates to flip vertically
-        gl.glTexCoord2f(0, 1); gl.glVertex3f(-1, -1, 0)        # Bottom left
-        gl.glTexCoord2f(1, 1); gl.glVertex3f(1, -1, 0)      # Bottom right
-        gl.glTexCoord2f(1, 0); gl.glVertex3f(1, 1, 0)    # Top right
-        gl.glTexCoord2f(0, 0); gl.glVertex3f(-1, 1, 0)      # Top left
+        # Use the scaled and centered texture coordinates
+        gl.glTexCoord2f(0, 1)
+        gl.glVertex3f(-1, -1, 0)  # Bottom left
+
+        gl.glTexCoord2f(1, 1)
+        gl.glVertex3f(1, -1, 0)  # Bottom right
+
+        gl.glTexCoord2f(1, 0)
+        gl.glVertex3f(1, 1, 0)  # Top right
+
+        gl.glTexCoord2f(0, 0)
+        gl.glVertex3f(-1, 1, 0)  # Top left
+
         gl.glEnd()
 
-        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)  # Unbind texture after drawing
+        # Unbind the texture to ensure correct rendering of subsequent elements
+        gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
-    # TODO: Switched to NDC
-    def draw_bounding_boxes(self):
-        if self.image is None:
-            print("No image available for drawing bounding boxes.")
-            return  # Exit if image is not available
+        # Disable texturing and depth testing for drawing bounding boxes
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glDisable(gl.GL_DEPTH_TEST)
 
-        """Draw the bounding boxes based on current detection results."""
-        for (box, score, class_id) in self.bounding_boxes:
-            print(f"Drawing box: {box} with score {score} for class {class_id}")
-            color = (0.0, 1.0, 0.0, 0.5)  # Green with transparency for high confidence
-            gl.glColor4f(color[0], color[1], color[2], color[3])  # Set the color with alpha
+        # Draw bounding boxes
+        if self.bounding_boxes:
+            for box, score, class_id in self.bounding_boxes:
+                x1, y1, x2, y2 = box
 
-            x1, y1, x2, y2 = box
-            # Convert to normalized device coordinates
-            x1_ndc = (x1 / self.image.shape[1]) * 2 - 1
-            y1_ndc = 1 - (y1 / self.image.shape[0]) * 2
-            x2_ndc = (x2 / self.image.shape[1]) * 2 - 1
-            y2_ndc = 1 - (y2 / self.image.shape[0]) * 2
+                # Scale bounding box coordinates to match the scaled video size
+                x1 = x_offset + (x1 / video_width) * scaled_width
+                y1 = y_offset + (y1 / video_height) * scaled_height
+                x2 = x_offset + (x2 / video_width) * scaled_width
+                y2 = y_offset + (y2 / video_height) * scaled_height
 
-            print(f"Converted NDC coordinates: ({x1_ndc}, {y1_ndc}), ({x2_ndc}, {y2_ndc})")
+                # Normalize the coordinates to NDC
+                x1_ndc = (x1 / widget_width) * 2 - 1
+                y1_ndc = 1 - (y1 / widget_height) * 2
+                x2_ndc = (x2 / widget_width) * 2 - 1
+                y2_ndc = 1 - (y2 / widget_height) * 2
 
-            # Ensure the OpenGL state is set correctly
-            gl.glDisable(gl.GL_TEXTURE_2D)  # Disable texturing
-            gl.glEnable(gl.GL_BLEND)  # Enable blending
-            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)  # Set blend function
+                # Set the color to red with 50% opacity for the filled square
+                gl.glColor4f(1.0, 0.0, 0.0, 0.5)
 
-            # Draw filled rectangle for the transparent overlay
-            gl.glBegin(gl.GL_QUADS)
-            gl.glVertex2f(x1_ndc, y1_ndc)
-            gl.glVertex2f(x2_ndc, y1_ndc)
-            gl.glVertex2f(x2_ndc, y2_ndc)
-            gl.glVertex2f(x1_ndc, y2_ndc)
-            gl.glEnd()
+                # Draw the filled bounding box
+                gl.glBegin(gl.GL_QUADS)
+                gl.glVertex2f(x1_ndc, y1_ndc)
+                gl.glVertex2f(x2_ndc, y1_ndc)
+                gl.glVertex2f(x2_ndc, y2_ndc)
+                gl.glVertex2f(x1_ndc, y2_ndc)
+                gl.glEnd()
 
-            # Draw the outline
-            gl.glColor3f(1.0, 1.0, 1.0)  # Set outline color to white
-            gl.glBegin(gl.GL_LINE_LOOP)
-            gl.glVertex2f(x1_ndc, y1_ndc)
-            gl.glVertex2f(x2_ndc, y1_ndc)
-            gl.glVertex2f(x2_ndc, y2_ndc)
-            gl.glVertex2f(x1_ndc, y2_ndc)
-            gl.glEnd()
+                # Set the color to red with full opacity for the outline
+                gl.glColor4f(1.0, 0.0, 0.0, 1.0)
 
-            # Restore OpenGL state
-            gl.glEnable(gl.GL_TEXTURE_2D)  # Re-enable texturing
+                # Draw the bounding box outline
+                gl.glBegin(gl.GL_LINE_LOOP)
+                gl.glVertex2f(x1_ndc, y1_ndc)
+                gl.glVertex2f(x2_ndc, y1_ndc)
+                gl.glVertex2f(x2_ndc, y2_ndc)
+                gl.glVertex2f(x1_ndc, y2_ndc)
+                gl.glEnd()
+
+        # Re-enable texturing and depth testing for future rendering
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glEnable(gl.GL_DEPTH_TEST)
+
+        # Check for OpenGL errors (useful for debugging)
+        error = gl.glGetError()
+        if error != gl.GL_NO_ERROR:
+            print(f"OpenGL Error: {error}")
+
+
 
