@@ -29,26 +29,44 @@ output:
   save_video: true
   output_path: "output/detected_video.mp4"
 
-class_names:
-  0: pedestrian
-  1: people
-  2: bicycle
-  3: car
-  4: van
-  5: truck
-  6: tricycle
-  7: awning-tricycle
-  8: bus
-  9: motor
-
-colors:
-  0: [255, 125, 0]
-  1: [255, 125, 0]
-  2: [255, 125, 0]
-  3: [0, 255, 0]
-  4: [0, 255, 0]
-  5: [0, 255, 0]
-  6: [0, 255, 0]
-  7: [0, 255, 0]
-  8: [0, 255, 0]
-  9: [0, 255, 0]
+class_details:
+  0:
+    class: pedestrian
+    value: [255, 125, 0]
+    name: orange
+  1:
+    class: people
+    value: [255, 125, 0]
+    name: orange
+  2:
+    class: bicycle
+    value: [255, 125, 0]
+    name: orange
+  3:
+    class: car
+    value: [0, 255, 0]
+    name: green
+  4:
+    class: van
+    value: [0, 255, 0]
+    name: green
+  5:
+    class: truck
+    value: [0, 255, 0]
+    name: green
+  6:
+    class: tricycle
+    value: [0, 255, 0]
+    name: green
+  7:
+    class: awning-tricycle
+    value: [0, 255, 0]
+    name: green
+  8:
+    class: bus
+    value: [0, 255, 0]
+    name: green
+  9:
+    class: motor
+    value: [0, 255, 0]
+    name: green

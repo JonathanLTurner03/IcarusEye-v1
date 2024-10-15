@@ -4,16 +4,26 @@ from src.ui.config_panel import ConfigPanel
 import cv2
 import os
 import sys
+import yaml
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        # Load the configuration file
+        with open('config/config.yaml', 'r') as file:
+            self.config = yaml.safe_load(file)
+
         # Setup properties
         self.fps = 30
         self.native_fps = 30
         self.confidence = 50
+
+        # Get the available classes
+        self.__class_details = self.config['class_details']
+        self.__multi_color_classes = False
+        self.__omit_classes = []
 
         # Create a central widget
         self.central_widget = QWidget()
@@ -27,9 +37,7 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.config_panel)
 
     # TODO: Implement the following methods
-    def get_available_classes(self):
-        # Return a list of available classes
-        return ["Class1", "Class2", "Class3"]
+
 
     def set_fps(self, value):
         """Set the FPS value."""
@@ -42,6 +50,22 @@ class MainWindow(QMainWindow):
         self.confidence = value
 
     # Helper functions
+
+    # Gets the list of available classes
+    def get_available_classes(self):
+        """Get the list of available classes."""
+        if not self.__class_details:
+            return []
+
+        if self.__multi_color_classes:
+            return [f"{details['class']}: ({details['name']})" for details in self.__class_details.values()]
+        return [details['class'] for details in self.__class_details.values()]
+
+    # Sets the multivalue color classes
+    def set_multi_color_classes(self, value):
+        """Set the multi-color classes value."""
+        self.__multi_color_classes = value
+        print(f"Multi-color classes: {value}")
 
     # Gets the list of the available video input devices
     def populate_device_dropdown(self) -> list:
@@ -62,3 +86,7 @@ class MainWindow(QMainWindow):
             index += 1
 
         return devices
+
+    def update_omitted_classes(self, classes):
+        """Update the omitted classes."""
+        self.__omit_classes = classes

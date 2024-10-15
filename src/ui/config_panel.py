@@ -4,8 +4,6 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIntValidator
 import logging
 import cv2
-import os
-import sys
 
 
 class ConfigPanel(QWidget):
@@ -127,17 +125,19 @@ class ConfigPanel(QWidget):
 
         self.__classes_dropdown = QComboBox()
         self.__classes_dropdown.addItems(self.controller.get_available_classes())
-        self.__classes_dropdown.setEnabled(False)
 
         self.__add_class_button = QPushButton("Add Class")
         self.__add_class_button.clicked.connect(self.__add_class_to_omit)
-        self.__add_class_button.setEnabled(False)
 
         self.__remove_class_button = QPushButton("Remove Class")
         self.__remove_class_button.clicked.connect(self.__remove_class_from_omit)
-        self.__remove_class_button.setEnabled(False)
 
         self.__omitted_classes_label = QLabel("Omitted Classes: None")
+
+        # Set default states
+        self.__remove_class_button.setEnabled(False)
+        self.__add_class_button.setEnabled(False)
+        self.__classes_dropdown.setEnabled(False)
 
         # Add to layout
         detection_layout = QVBoxLayout()
@@ -189,8 +189,9 @@ class ConfigPanel(QWidget):
     def __toggle_class_specific_bbox(self, state):
         """Enable or disable class-specific bounding boxes."""
         enabled = state
-        # TODO: Implement the logic to enable/disable class-specific bounding boxes in the controller
-        print(f"Class-Specific Bounding Boxes Enabled: {enabled}")
+        self.controller.set_multi_color_classes(enabled)
+        self.__classes_dropdown.clear()
+        self.__classes_dropdown.addItems(self.controller.get_available_classes())
 
     def __toggle_input_type(self):
         """Toggle between device input and file input."""
@@ -213,29 +214,34 @@ class ConfigPanel(QWidget):
         self.__classes_dropdown.setEnabled(enabled)
         self.__add_class_button.setEnabled(enabled)
         self.__remove_class_button.setEnabled(enabled)
+        if not enabled:
+            self.__omitted_classes_label.setText("Omitted Classes: (disabled)")
+        else:
+            self.__omitted_classes_label.setText("Omitted Classes: None")
+            self.__update_omitted_classes_label()
 
     def __add_class_to_omit(self):
         """Add the selected class to the omitted classes list."""
-        selected_class = self.__classes_dropdown.currentText()
+        selected_class = self.__classes_dropdown.currentText().split(':')[0].strip()
         if selected_class and selected_class not in self.__omitted_classes:
             self.__omitted_classes.append(selected_class)
             self.__update_omitted_classes_label()
 
     def __remove_class_from_omit(self):
         """Remove the selected class from the omitted classes list."""
-        selected_class = self.__classes_dropdown.currentText()
+        selected_class = self.__classes_dropdown.currentText().split(':')[0].strip()
         if selected_class in self.__omitted_classes:
             self.__omitted_classes.remove(selected_class)
             self.__update_omitted_classes_label()
 
     def __update_omitted_classes_label(self):
         """Update the label displaying the omitted classes."""
-        # TODO: Perform the update in the main menu
         if self.__omitted_classes:
             omitted_classes_text = ", ".join(self.__omitted_classes)
         else:
             omitted_classes_text = "None"
         self.__omitted_classes_label.setText(f"Omitted Classes: {omitted_classes_text}")
+        self.controller.update_omitted_classes(self.__omitted_classes)
 
     def __set_fps_button(self, value, slider):
         """Set the FPS value and update the slider."""
