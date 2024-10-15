@@ -1,6 +1,9 @@
 import time
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 from src.ui.config_panel import ConfigPanel
+import cv2
+import os
+import sys
 
 
 class MainWindow(QMainWindow):
@@ -37,3 +40,25 @@ class MainWindow(QMainWindow):
         """Set the confidence threshold value."""
         # TODO: Implement the update to the detection worker
         self.confidence = value
+
+    # Helper functions
+
+    # Gets the list of the available video input devices
+    def populate_device_dropdown(self) -> list:
+        """Populate the dropdown with available video input devices."""
+        devices = []
+        index = 0
+
+        while True:
+            # Redirect stderr to suppress camera indexing errors
+            sys.stderr = open(os.devnull, 'w')
+            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+            sys.stderr = sys.__stderr__  # Restore stderr
+
+            if not cap.read()[0]:
+                break
+            devices.append(f"Device {index}")
+            cap.release()
+            index += 1
+
+        return devices

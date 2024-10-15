@@ -1,8 +1,8 @@
-import logging
-
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton,
                              QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout, QLineEdit)
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIntValidator
+import logging
 import cv2
 import os
 import sys
@@ -57,7 +57,7 @@ class ConfigPanel(QWidget):
 
         # Dropdown for available input devices
         self.__device_dropdown = QComboBox()
-        self.__populate_device_dropdown()
+        self.__device_dropdown.addItems(self.controller.populate_device_dropdown())
 
         # File input button
         self.__file_button = QPushButton("Select Video File")
@@ -94,6 +94,7 @@ class ConfigPanel(QWidget):
         resolutions = ["0.25x", "0.5x", "0.75x", "1x", "1.25x", "1.5x", "1.75x", "2x"]
         self.__resolution_dropdown.addItems(resolutions)
         self.__resolution_dropdown.currentIndexChanged.connect(self.update_resolution)
+        self.__resolution_dropdown.setCurrentIndex(3)
 
         # Add to layout
         video_layout = QVBoxLayout()
@@ -162,13 +163,20 @@ class ConfigPanel(QWidget):
         # Max Bounding Box
         self.__bounding_box_limit_label = QLabel("Max Bounding Box:")
         self.__bounding_box_limit = QLineEdit()
-        self.__bounding_box_limit.setInputMask("000")
+        self.__bounding_box_limit.setPlaceholderText("Enter max bounding box")
+        self.__bounding_box_limit.setValidator(QIntValidator(0, 9999))
+        self.__bounding_box_limit.setText("100")  # Set default bounding box size
+
+        # Apply Button
+        apply_button = QPushButton("Apply")
+        apply_button.clicked.connect(self.apply_performance_settings)
 
         # Add to layout
         performance_layout.addWidget(self.__nth_frame_label)
         performance_layout.addWidget(self.__nth_frame_dropdown)
         performance_layout.addWidget(self.__bounding_box_limit_label)
         performance_layout.addWidget(self.__bounding_box_limit)
+        performance_layout.addWidget(apply_button)
 
         # Set the layout for the performance group
         self.__performance_group.setLayout(performance_layout)
@@ -199,24 +207,6 @@ class ConfigPanel(QWidget):
         file_name, _ = QFileDialog.getOpenFileName(self, "Select Video File", "", "Video Files (*.mp4 *.avi *.mov)")
         if file_name:
             self.controller.set_video_file(file_name)
-
-    # TODO: Abstract this method to the main window.
-    def __populate_device_dropdown(self):
-        """Populate the dropdown with available video input devices."""
-        self.__device_dropdown.clear()
-        index = 0
-
-        while True:
-            # Redirect stderr to suppress camera indexing errors
-            sys.stderr = open(os.devnull, 'w')
-            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-            sys.stderr = sys.__stderr__  # Restore stderr
-
-            if not cap.read()[0]:
-                break
-            self.__device_dropdown.addItem(f"Device {index}")
-            cap.release()
-            index += 1
 
     def __toggle_omit_classes(self, state):
         """Enable or disable the omit classes section."""
@@ -250,18 +240,26 @@ class ConfigPanel(QWidget):
 
     def __set_fps_button(self, value, slider):
         """Set the FPS value and update the slider."""
-        self.update_fps(value)
+        self.__set_fps(value)
         slider.setValue(value)
 
     def __set_fps(self, value):
         """Set the FPS value and update the slider."""
-        self.update_fps(value)
+        self.__fps_label.setText(f"Frame Rate (FPS): {value}, Native: {self.controller.native_fps}")
+        self.controller.set_fps(value)
+
+    def apply_performance_settings(self):
+        """Apply the performance settings."""
+        nth_frame = self.__nth_frame_dropdown.currentText()
+        max_bounding_box = self.__bounding_box_limit.text()
+        # TODO: Implement the logic to update the performance settings in the controller
+        print(f"Applied settings - Nth Frame: {nth_frame}, Max Bounding Box: {max_bounding_box}")
 
     # Updates the fps slider value and label
     def update_fps(self, value):
         """Update the label and perform actions when the slider value changes."""
-        self.__fps_label.setText(f"Frame Rate (FPS): {value}, Native: {self.controller.native_fps}")
         self.controller.set_fps(value)
+        self.__set_fps(value)
 
     # Updates the confidence slider value and label
     def update_confidence(self, value):
