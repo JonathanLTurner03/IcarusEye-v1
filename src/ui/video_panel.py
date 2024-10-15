@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QVBoxLayout, QHBoxLayout, QLabel,
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLayout, QLabel,
                              QSizePolicy, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer
 from src.video_stream import VideoStream
@@ -24,7 +24,6 @@ class VideoPanel(QWidget):
         # Setup attribute variables and layouts.
         self.__opengl_widget = OpenGLVideoWidget(self)
         self.__opengl_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.layout.addWidget(self.__opengl_widget)
 
         self.__control_layout = QVBoxLayout()
 
@@ -39,19 +38,27 @@ class VideoPanel(QWidget):
         self.__stop_button.clicked.connect(self.__stop_video)
         self.__control_buttons_layout.addWidget(self.__stop_button)
 
+        self.__timeline_layout = QVBoxLayout()
+
         self.__timeline_slider = QSlider(Qt.Orientation.Horizontal, self)
         self.__timeline_slider.setRange(0, 100)
         self.__timeline_slider.sliderMoved.connect(self.__seek_video)
-        self.__control_layout.addWidget(self.__timeline_slider)
+        self.__timeline_layout.addWidget(self.__timeline_slider)
 
-        self.layout.addLayout(self.__control_layout)
+        self.__control_layout.addLayout(self.__timeline_layout)
 
         self.__current_duration_label = QLabel(format_time(0))
+        self.__current_duration_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.__video_duration_label = QLabel(format_time(0))
+        self.__video_duration_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         time_layout = QHBoxLayout()
         time_layout.addWidget(self.__current_duration_label, alignment=Qt.AlignmentFlag.AlignLeft)
         time_layout.addWidget(self.__video_duration_label, alignment=Qt.AlignmentFlag.AlignRight)
-        self.__control_layout.addLayout(time_layout)
+        self.__timeline_layout.addLayout(time_layout)
+
+        # Add widgets to the main layout with stretch factors
+        self.layout.addWidget(self.__opengl_widget, stretch=7)
+        self.layout.addLayout(self.__control_layout, stretch=3)
 
         self.__timer = QTimer(self)
         self.__timer.timeout.connect(self.update_frame)
@@ -115,6 +122,7 @@ class VideoPanel(QWidget):
         self.__video_stream = VideoStream(file_path)
         self.__fps = self.__video_stream.get_fps()
         self.__timeline_slider.setRange(0, self.__video_stream.frame_count)
+        self.__timeline_slider.setVisible(True)
         self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
         self.__play_video()
 
@@ -123,4 +131,5 @@ class VideoPanel(QWidget):
         self.__video_stream = VideoStream(device_index)
         self.__fps = self.__video_stream.get_fps()
         self.__timeline_slider.setRange(0, 0)  # No timeline for live feed
+        self.__timeline_slider.setVisible(False)
         self.__play_video()
