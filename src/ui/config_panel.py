@@ -1,5 +1,12 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox
+import logging
+
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton, QComboBox, QFileDialog
 from PyQt6.QtCore import Qt
+import cv2
+import os
+import sys
+
+from src.overlays import log_level
 
 
 class ConfigPanel(QWidget):
@@ -13,6 +20,7 @@ class ConfigPanel(QWidget):
         self.__config_layout = QVBoxLayout()
 
         # Creates the Group Boxes for the configuration panel
+        self.__input_settings = QGroupBox("Input Settings")
         self.__video_group = QGroupBox("Video Settings")
         self.__detection_group = QGroupBox("Detection Settings")
 
@@ -21,15 +29,45 @@ class ConfigPanel(QWidget):
         self.__confidence_label = None
 
         # Initialize the video and detection settings
+        self.__init_input()
         self.__init_video()
         self.__init_detection()
 
         # Add the config group to the main layout
+        self.__config_layout.addWidget(self.__input_settings)
         self.__config_layout.addWidget(self.__video_group)
         self.__config_layout.addWidget(self.__detection_group)
 
         # Set the layout for the ConfigPanel
         self.setLayout(self.__config_layout)
+
+    def __init_input(self):
+        video_input_layout = QVBoxLayout()
+
+        # Radio buttons to switch between device and file input
+        device_radio = QRadioButton("Device Input")
+        file_radio = QRadioButton("File Input")
+        device_radio.setChecked(True)  # Default to device input
+
+        device_radio.toggled.connect(self.__toggle_input_type)
+
+        # Dropdown for available input devices
+        self.__device_dropdown = QComboBox()
+        self.__populate_device_dropdown()
+
+        # File input button
+        self.__file_button = QPushButton("Select Video File")
+        self.__file_button.clicked.connect(self.__select_video_file)
+        self.__file_button.setEnabled(False)  # Initially disabled
+
+        # Add widgets to the video input layout
+        video_input_layout.addWidget(device_radio)
+        video_input_layout.addWidget(self.__device_dropdown)
+        video_input_layout.addWidget(file_radio)
+        video_input_layout.addWidget(self.__file_button)
+
+        # Set the layout for the input settings group
+        self.__input_settings.setLayout(video_input_layout)
 
     def __init_video(self):
         # Frame Rate Slider
@@ -66,6 +104,39 @@ class ConfigPanel(QWidget):
 
         # Set the layout for the detection group
         self.__detection_group.setLayout(detection_layout)
+
+    def __toggle_input_type(self):
+        """Toggle between device input and file input."""
+        if self.__device_dropdown.isEnabled():
+            self.__device_dropdown.setEnabled(False)
+            self.__file_button.setEnabled(True)
+        else:
+            self.__device_dropdown.setEnabled(True)
+            self.__file_button.setEnabled(False)
+
+    def __select_video_file(self):
+        """Open a file dialog to select a video file."""
+        file_name, _ = QFileDialog.getOpenFileName(self, "Select Video File", "", "Video Files (*.mp4 *.avi *.mov)")
+        if file_name:
+            self.controller.set_video_file(file_name)
+
+    # TODO: Abstract this method to the main window.
+    def __populate_device_dropdown(self):
+        """Populate the dropdown with available video input devices."""
+        self.__device_dropdown.clear()
+        index = 0
+
+        while True:
+            # Redirect stderr to suppress camera indexing errors
+            sys.stderr = open(os.devnull, 'w')
+            cap = cv2.VideoCapture(index)
+            sys.stderr = sys.__stderr__  # Restore stderr
+
+            if not cap.read()[0]:
+                break
+            self.__device_dropdown.addItem(f"Device {index}")
+            cap.release()
+            index += 1
 
     # Updates the fps slider value and label
     def update_fps(self, value):
