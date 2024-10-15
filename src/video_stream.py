@@ -6,9 +6,26 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # TODO add documentation and comments
 class VideoStream:
-    def __init__(self, source=0, width=1920, fps=60, height=1080, backend=cv2.CAP_DSHOW):
+    def __init__(self, type, source=0, width=1920, fps=60, height=1080, backend=cv2.CAP_DSHOW):
+        self.cap = None
+        self.source = source
+
+        self.width = width
+        self.height = height
+        self.fps = fps
+        self.backend = backend
+
+        if type == 'camera':
+            self._setup_camera()
+        elif type == 'recording':
+            self._setup_recording()
+        elif type == 'capture_card':
+            self.setup_capture_card()
+
+
+    def _setup_camera(self):
         # Open the camera using DirectShow (Windows)
-        cap = cv2.VideoCapture(source, backend)
+        cap = cv2.VideoCapture(self.source, backend)
 
         # Check if the camera opened successfully
         if not cap.isOpened():
@@ -17,8 +34,8 @@ class VideoStream:
             print("Camera opened successfully with DirectShow.")
 
         # Set the resolution (1080p)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
 
         # Optionally limit the frame rate to avoid high processing loads at 1080p
         cap.set(cv2.CAP_PROP_FPS, fps)  # Adjust as needed
@@ -32,6 +49,19 @@ class VideoStream:
             print("MJPEG codec set successfully.")
             self.cap = cap
 
+
+    def _setup_recording(self):
+        self.cap = cv2.VideoCapture(self.source)
+        if not self.cap.isOpened():
+            logging.error(f"Error: Unable to open video source {self.source}")
+        else:
+            # Set the resolution
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+
+
+    def setup_capture_card(self):
+        print('Not implemented.')
 
 
     def get_fps(self):

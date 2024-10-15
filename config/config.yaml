@@ -4,12 +4,12 @@ model:
   deepsort: "models/deepsort/mars-small128.pb"  # Path to DeepSORT embedder model
 
 video:
-  live: true
+  live: false
   device: 0
-  source: "goggles_test.mp4"
+  source: "test_flight.mp4"
   target_fps: 30
   nth_frame: 3  # Adjust workload
-  max_labels: 5
+  max_labels: 20
 
 detection:
   confidence_threshold: 0.2  # Minimum confidence for displaying boxes

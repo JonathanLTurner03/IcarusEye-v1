@@ -133,22 +133,16 @@ class OpenGLVideoWidget(QOpenGLWidget):
         # Set viewport based on calculated scaled dimensions and offsets
         gl.glViewport(int(x_offset), int(y_offset), int(scaled_width), int(scaled_height))
 
-        # Draw the textured quad
+        # Draw the textured quad (the video frame)
         gl.glBegin(gl.GL_QUADS)
-
-        # Use the scaled and centered texture coordinates
-        gl.glTexCoord2f(0, 1)
+        gl.glTexCoord2f(0, 1);
         gl.glVertex3f(-1, -1, 0)  # Bottom left
-
-        gl.glTexCoord2f(1, 1)
+        gl.glTexCoord2f(1, 1);
         gl.glVertex3f(1, -1, 0)  # Bottom right
-
-        gl.glTexCoord2f(1, 0)
+        gl.glTexCoord2f(1, 0);
         gl.glVertex3f(1, 1, 0)  # Top right
-
-        gl.glTexCoord2f(0, 0)
+        gl.glTexCoord2f(0, 0);
         gl.glVertex3f(-1, 1, 0)  # Top left
-
         gl.glEnd()
 
         # Unbind the texture to ensure correct rendering of subsequent elements
@@ -163,13 +157,13 @@ class OpenGLVideoWidget(QOpenGLWidget):
             for box, score, class_id in self.bounding_boxes:
                 x1, y1, x2, y2 = box
 
-                # Scale bounding box coordinates to match the scaled video size
+                # Adjust bounding box coordinates for the scaled and centered video frame
                 x1 = x_offset + (x1 / video_width) * scaled_width
                 y1 = y_offset + (y1 / video_height) * scaled_height
                 x2 = x_offset + (x2 / video_width) * scaled_width
                 y2 = y_offset + (y2 / video_height) * scaled_height
 
-                # Normalize the coordinates to NDC
+                # Normalize the coordinates to NDC (Normalized Device Coordinates)
                 x1_ndc = (x1 / widget_width) * 2 - 1
                 y1_ndc = 1 - (y1 / widget_height) * 2
                 x2_ndc = (x2 / widget_width) * 2 - 1
@@ -205,6 +199,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
         error = gl.glGetError()
         if error != gl.GL_NO_ERROR:
             print(f"OpenGL Error: {error}")
+
 
 
 

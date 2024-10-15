@@ -38,11 +38,13 @@ class MainWindow(QMainWindow):
             if not self.config['video']['live'] else self.config['video']['device']
 
         verbose = self.config['logging']['detection_verbose']
-
-        self.video_stream = VideoStream(source)
+        if self.config['video']['live']:
+            self.video_stream = VideoStream('camera', source)
+        else:
+            self.video_stream = VideoStream('recording', source)
 
         # Initialize the DetectionThread with the YOLOv8s model
-        model_path = self.config['model']['yolov8s_pretrained']
+        model_path = self.config['model']['yolov8s']
         self.detection_thread = DetectionThread(model_path, verbose)
         self.detection_thread.detection_done.connect(self.handle_detection)
         self.detection_thread.error.connect(self.handle_error)
