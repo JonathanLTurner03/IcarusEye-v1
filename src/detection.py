@@ -19,14 +19,12 @@ class YOLOv8Detection:
             transforms.ToTensor()
         ])
 
-
     def detect(self, frame, verbose=False):
         frame_tensor = self.transform(frame).unsqueeze(0).to(self.device)
         with torch.no_grad():
             results = self.model(frame_tensor, verbose=verbose)
         boxes, scores, classes = self.process_detections(results)
         return boxes, scores, classes
-
 
     def process_detections(self, results):
         boxes = []

@@ -19,6 +19,7 @@ class MainWindow(QMainWindow):
         self.fps = 30
         self.native_fps = 30
         self.confidence = 50
+        self.__res_multiplier = 1.0
 
         # Get the available classes
         self.__class_details = self.config['class_details']
@@ -38,7 +39,6 @@ class MainWindow(QMainWindow):
 
     # TODO: Implement the following methods
 
-
     def set_fps(self, value):
         """Set the FPS value."""
         # TODO: Implement the update to the video player
@@ -50,6 +50,14 @@ class MainWindow(QMainWindow):
         self.confidence = value
 
     # Helper functions
+
+    # UI Value Setters and Getters #
+
+    # Sets the resolution multiplier
+    def set_resolution_multiplier(self, value):
+        """Set the resolution multiplier value."""
+        self.__res_multiplier = value
+        print(f'Resolution multiplier: {value}')
 
     # Gets the list of available classes
     def get_available_classes(self):
@@ -67,7 +75,8 @@ class MainWindow(QMainWindow):
         self.__multi_color_classes = value
         print(f"Multi-color classes: {value}")
 
-    # Gets the list of the available video input devices
+
+
     def populate_device_dropdown(self) -> list:
         """Populate the dropdown with available video input devices."""
         devices = []
@@ -85,6 +94,7 @@ class MainWindow(QMainWindow):
             cap.release()
             index += 1
 
+        # Update the dropdown in the main thread
         return devices
 
     def update_omitted_classes(self, classes):

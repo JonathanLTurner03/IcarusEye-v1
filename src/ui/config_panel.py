@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton,
                              QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout, QLineEdit)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QIntValidator
+from src.threads import DeviceScanner
 import logging
 import cv2
 
@@ -27,6 +28,9 @@ class ConfigPanel(QWidget):
         self.__confidence_label = None
         self.__omitted_classes = []
         self.__fps_slider = None
+        self.__nth_frame = 0
+        self.__device_thread = None
+        self.__device_worker = None
 
         # Initialize the video and detection settings
         self.__init_input()
@@ -55,7 +59,10 @@ class ConfigPanel(QWidget):
 
         # Dropdown for available input devices
         self.__device_dropdown = QComboBox()
-        self.__device_dropdown.addItems(self.controller.populate_device_dropdown())
+        self.__refresh_devices()
+
+        self.__refresh_button = QPushButton("Refresh Devices")
+        self.__refresh_button.clicked.connect(self.__refresh_devices)
 
         # File input button
         self.__file_button = QPushButton("Select Video File")
@@ -65,6 +72,7 @@ class ConfigPanel(QWidget):
         # Add widgets to the video input layout
         video_input_layout.addWidget(device_radio)
         video_input_layout.addWidget(self.__device_dropdown)
+        video_input_layout.addWidget(self.__refresh_button)
         video_input_layout.addWidget(file_radio)
         video_input_layout.addWidget(self.__file_button)
 
@@ -197,9 +205,11 @@ class ConfigPanel(QWidget):
         """Toggle between device input and file input."""
         if self.__device_dropdown.isEnabled():
             self.__device_dropdown.setEnabled(False)
+            self.__refresh_button.setEnabled(False)
             self.__file_button.setEnabled(True)
         else:
             self.__device_dropdown.setEnabled(True)
+            self.__refresh_button.setEnabled(True)
             self.__file_button.setEnabled(False)
 
     def __select_video_file(self):
@@ -256,14 +266,28 @@ class ConfigPanel(QWidget):
     def __update_resolution(self, index):
         """Update the resolution based on the selected index."""
         resolution = self.__resolution_dropdown.itemText(index)
-        # Implement the logic to update the resolution in the controller
-        print(f"Selected resolution: {resolution}")
+        self.controller.set_resolution_multiplier(float(resolution[:-1]))
+
+    def __refresh_devices(self):
+        """Refresh the list of available devices."""
+        self.__device_thread = QThread()
+        self.__device_worker = DeviceScanner()
+        self.__device_worker.moveToThread(self.__device_thread)
+        self.__device_thread.started.connect(self.__device_worker.run)
+        self.__device_worker.devices_scanned.connect(self.__populate_devices)
+        self.__device_thread.start()
+
+    def __populate_devices(self, devices):
+        """Populate the dropdown with available video input devices."""
+        self.__device_dropdown.clear()
+        self.__device_dropdown.addItems(devices)
+        self.__device_thread.quit()
+        self.__device_thread.wait()
 
     def update_nth_frame(self, index):
         """Update the nth frame detection based on the selected index."""
         nth_frame = self.__nth_frame_dropdown.itemText(index)
-        # TODO: Implement the logic to update the nth frame detection in the controller
-        print(f"Selected nth frame: {nth_frame}")
+        self.__nth_frame = int(nth_frame)
 
     def apply_performance_settings(self):
         """Apply the performance settings."""
@@ -282,7 +306,6 @@ class ConfigPanel(QWidget):
         self.controller.set_fps(value)
         self.__set_fps(value)
 
-    # Updates the confidence slider value and label
     def update_confidence(self, value):
         """Update the label and perform actions when the slider value changes."""
         self.__confidence_label.setText(f"Confidence Threshold: {value}")

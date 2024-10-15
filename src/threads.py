@@ -4,6 +4,8 @@ from src.detection import YOLOv8Detection
 import traceback
 import logging
 import cv2
+import os
+import sys
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -69,3 +71,26 @@ class DetectionThread(QThread):
         self.worker.stop()
         self.quit()
         self.wait()
+
+
+class DeviceScanner(QObject):
+    devices_scanned = pyqtSignal(list)
+
+    def run(self):
+        """Scan for available video input devices."""
+        devices = []
+        index = 0
+
+        while True:
+            # Redirect stderr to suppress camera indexing errors
+            sys.stderr = open(os.devnull, 'w')
+            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+            sys.stderr = sys.__stderr__  # Restore stderr
+
+            if not cap.read()[0]:
+                break
+            devices.append(f"Device {index}")
+            cap.release()
+            index += 1
+
+        self.devices_scanned.emit(devices)
