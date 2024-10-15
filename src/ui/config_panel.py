@@ -1,7 +1,7 @@
 import logging
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton,
-                              QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout)
+                              QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout, QLineEdit)
 from PyQt6.QtCore import Qt
 import cv2
 import os
@@ -21,6 +21,7 @@ class ConfigPanel(QWidget):
         self.__input_settings = QGroupBox("Input Settings")
         self.__video_group = QGroupBox("Video Settings")
         self.__detection_group = QGroupBox("Detection Settings")
+        self.__performance_group = QGroupBox("Performance Settings")
 
         # Defines global variables for the configuration panel
         self.__fps_label = None
@@ -32,11 +33,13 @@ class ConfigPanel(QWidget):
         self.__init_input()
         self.__init_video()
         self.__init_detection()
+        self.__init_performance()
 
         # Add the config group to the main layout
         self.__config_layout.addWidget(self.__input_settings)
         self.__config_layout.addWidget(self.__video_group)
         self.__config_layout.addWidget(self.__detection_group)
+        self.__config_layout.addWidget(self.__performance_group)
 
         # Set the layout for the ConfigPanel
         self.setLayout(self.__config_layout)
@@ -143,11 +146,43 @@ class ConfigPanel(QWidget):
         # Set the layout for the detection group
         self.__detection_group.setLayout(detection_layout)
 
+    def __init_performance(self):
+        # Performance Settings Layout
+        performance_layout = QVBoxLayout()
+
+        # nth frame detection
+        self.__nth_frame_label = QLabel("Nth Frame Detection:")
+        self.__nth_frame_dropdown = QComboBox()
+        nth_frames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+
+        self.__nth_frame_dropdown.addItems(nth_frames)
+        self.__nth_frame_dropdown.currentIndexChanged.connect(self.update_nth_frame)
+
+        # Max Bounding Box
+        self.__bounding_box_limit_label = QLabel("Max Bounding Box:")
+        self.__bounding_box_limit = QLineEdit()
+        self.__bounding_box_limit.setInputMask("000")
+
+        # Add to layout
+        performance_layout.addWidget(self.__nth_frame_label)
+        performance_layout.addWidget(self.__nth_frame_dropdown)
+        performance_layout.addWidget(self.__bounding_box_limit_label)
+        performance_layout.addWidget(self.__bounding_box_limit)
+
+        # Set the layout for the performance group
+        self.__performance_group.setLayout(performance_layout)
+
     def update_resolution(self, index):
         """Update the resolution based on the selected index."""
         resolution = self.__resolution_dropdown.itemText(index)
         # Implement the logic to update the resolution in the controller
         print(f"Selected resolution: {resolution}")
+
+    def update_nth_frame(self, index):
+        """Update the nth frame detection based on the selected index."""
+        nth_frame = self.__nth_frame_dropdown.itemText(index)
+        # TODO: Implement the logic to update the nth frame detection in the controller
+        print(f"Selected nth frame: {nth_frame}")
 
     def __toggle_input_type(self):
         """Toggle between device input and file input."""
