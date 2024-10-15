@@ -79,13 +79,13 @@ class ConfigPanel(QWidget):
         fps_slider = QSlider(Qt.Orientation.Horizontal)
         fps_slider.setRange(1, 60)
         fps_slider.setValue(self.controller.fps)
-        fps_slider.valueChanged.connect(self.update_fps)
+        fps_slider.valueChanged.connect(self.__set_fps)
 
         # Common FPS Buttons
         fps_buttons_layout = QHBoxLayout()
         for fps in [24, 30, 60]:
             button = QPushButton(f"{fps} FPS")
-            button.clicked.connect(lambda _, f=fps: self.__set_fps(f, fps_slider))
+            button.clicked.connect(lambda _, f=fps: self.__set_fps_button(f, fps_slider))
             fps_buttons_layout.addWidget(button)
 
         # Resolution Settings
@@ -248,10 +248,14 @@ class ConfigPanel(QWidget):
             omitted_classes_text = "None"
         self.__omitted_classes_label.setText(f"Omitted Classes: {omitted_classes_text}")
 
-    def __set_fps(self, value, slider):
+    def __set_fps_button(self, value, slider):
         """Set the FPS value and update the slider."""
-        self.controller.set_fps(value)
+        self.update_fps(value)
         slider.setValue(value)
+
+    def __set_fps(self, value):
+        """Set the FPS value and update the slider."""
+        self.update_fps(value)
 
     # Updates the fps slider value and label
     def update_fps(self, value):
