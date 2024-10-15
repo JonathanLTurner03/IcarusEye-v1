@@ -8,7 +8,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Simulate a delay for loading resources
-        time.sleep(3)
+
 
         # Setup properties
         self.fps = 30

@@ -10,53 +10,71 @@ class ConfigPanel(QWidget):
         self.controller = controller
 
         # Creates a virtual layout for the configuration panel
-        self.layout = QVBoxLayout()
+        self.__config_layout = QVBoxLayout()
 
-        # Creates a group box to hold the configuration options
-        self.config_group = QGroupBox("Configuration")
-        self.config_layout = QVBoxLayout()
+        # Creates the Group Boxes for the configuration panel
+        self.__video_group = QGroupBox("Video Settings")
+        self.__detection_group = QGroupBox("Detection Settings")
 
-        # Frame Rate Slider
-        self.fps_label = QLabel(f"Frame Rate (FPS): {self.controller.fps}, Native: {self.controller.native_fps}")
-        self.fps_slider = QSlider(Qt.Orientation.Horizontal)
-        self.fps_slider.setRange(1, 60)
-        self.fps_slider.setValue(self.controller.fps)
+        # Defines global variables for the configuration panel
+        self.__fps_label = None
+        self.__confidence_label = None
 
-        # Connect the slider's valueChanged signal to the update method
-        self.fps_slider.valueChanged.connect(self.update_fps)
-
-        # Confidence Threshold Slider
-        self.confidence_label = QLabel(f"Confidence Threshold: {self.controller.confidence}")
-        self.confidence_slider = QSlider(Qt.Orientation.Horizontal)
-        self.confidence_slider.setRange(0, 100)
-        self.confidence_slider.setValue(self.controller.confidence)
-
-        # Connect the slider's valueChanged signal to the update method
-        self.confidence_slider.valueChanged.connect(self.update_confidence)
-
-        self.config_layout.addWidget(self.fps_label)
-        self.config_layout.addWidget(self.fps_slider)
-        self.config_layout.addWidget(self.confidence_label)
-        self.config_layout.addWidget(self.confidence_slider)
-
-        # Set the layout for the config group
-        self.config_group.setLayout(self.config_layout)
+        # Initialize the video and detection settings
+        self.__init_video()
+        self.__init_detection()
 
         # Add the config group to the main layout
-        self.layout.addWidget(self.config_group)
+        self.__config_layout.addWidget(self.__video_group)
+        self.__config_layout.addWidget(self.__detection_group)
 
         # Set the layout for the ConfigPanel
-        self.setLayout(self.layout)
+        self.setLayout(self.__config_layout)
 
+    def __init_video(self):
+        # Frame Rate Slider
+        self.__fps_label = QLabel(f"Frame Rate (FPS): {self.controller.fps}, Native: {self.controller.native_fps}")
+        fps_slider = QSlider(Qt.Orientation.Horizontal)
+        fps_slider.setRange(1, 60)
+        fps_slider.setValue(self.controller.fps)
+
+        # Connect the slider's valueChanged signal to the update method
+        fps_slider.valueChanged.connect(self.update_fps)
+
+        # Add to layout
+        video_layout = QVBoxLayout()
+        video_layout.addWidget(self.__fps_label)
+        video_layout.addWidget(fps_slider)
+
+        # Set the layout for the video group
+        self.__video_group.setLayout(video_layout)
+
+    def __init_detection(self):
+        # Confidence Threshold Slider
+        self.__confidence_label = QLabel(f"Confidence Threshold: {self.controller.confidence}")
+        confidence_slider = QSlider(Qt.Orientation.Horizontal)
+        confidence_slider.setRange(0, 100)
+        confidence_slider.setValue(self.controller.confidence)
+
+        # Connect the slider's valueChanged signal to the update method
+        confidence_slider.valueChanged.connect(self.update_confidence)
+
+        # Add to layout
+        detection_layout = QVBoxLayout()
+        detection_layout.addWidget(self.__confidence_label)
+        detection_layout.addWidget(confidence_slider)
+
+        # Set the layout for the detection group
+        self.__detection_group.setLayout(detection_layout)
 
     # Updates the fps slider value and label
     def update_fps(self, value):
         """Update the label and perform actions when the slider value changes."""
-        self.fps_label.setText(f"Frame Rate (FPS): {value}, Native: {self.controller.native_fps}")
+        self.__fps_label.setText(f"Frame Rate (FPS): {value}, Native: {self.controller.native_fps}")
         self.controller.set_fps(value)
 
     # Updates the confidence slider value and label
     def update_confidence(self, value):
         """Update the label and perform actions when the slider value changes."""
-        self.confidence_label.setText(f"Confidence Threshold: {value}")
+        self.__confidence_label.setText(f"Confidence Threshold: {value}")
         self.controller.set_confidence(value)
