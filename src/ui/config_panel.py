@@ -60,6 +60,7 @@ class ConfigPanel(QWidget):
         # Dropdown for available input devices
         self.__device_dropdown = QComboBox()
         self.__refresh_devices()
+        self.__device_dropdown.currentIndexChanged.connect(self.__update_selected_device)
 
         self.__refresh_button = QPushButton("Refresh Devices")
         self.__refresh_button.clicked.connect(self.__refresh_devices)
@@ -280,6 +281,7 @@ class ConfigPanel(QWidget):
     def __populate_devices(self, devices):
         """Populate the dropdown with available video input devices."""
         self.__device_dropdown.clear()
+        self.__device_dropdown.addItems(["Select Device"])
         self.__device_dropdown.addItems(devices)
         self.__device_thread.quit()
         self.__device_thread.wait()
@@ -306,9 +308,16 @@ class ConfigPanel(QWidget):
         self.__confidence_label.setText(f"Confidence Threshold: {value}")
         self.controller.set_confidence(value)
 
+    def __update_selected_device(self):
+        """Update the selected device based on the dropdown."""
+        selected_device = self.__device_dropdown.currentText()
+        if selected_device != "Select Device":
+            self.controller.set_video_device(selected_device)
+            if self.__device_dropdown.itemText(0) == "Select Device":
+                self.__device_dropdown.removeItem(0)
+
     def set_fps(self, value):
         """Update the label and perform actions when the slider value changes."""
-        self.controller.set_fps(value)
         self.__set_fps(value)
 
     def set_confidence(self, value):
