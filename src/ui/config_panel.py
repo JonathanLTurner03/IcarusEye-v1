@@ -6,9 +6,6 @@ import cv2
 import os
 import sys
 
-from src.overlays import log_level
-
-
 class ConfigPanel(QWidget):
     def __init__(self, controller):
         super().__init__()
@@ -27,6 +24,7 @@ class ConfigPanel(QWidget):
         # Defines global variables for the configuration panel
         self.__fps_label = None
         self.__confidence_label = None
+        self.__omitted_classes = []
 
         # Initialize the video and detection settings
         self.__init_input()
@@ -129,7 +127,7 @@ class ConfigPanel(QWidget):
         while True:
             # Redirect stderr to suppress camera indexing errors
             sys.stderr = open(os.devnull, 'w')
-            cap = cv2.VideoCapture(index)
+            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
             sys.stderr = sys.__stderr__  # Restore stderr
 
             if not cap.read()[0]:
