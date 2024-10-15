@@ -116,12 +116,12 @@ class ConfigPanel(QWidget):
     def __init_detection(self):
         # Confidence Threshold Slider
         self.__confidence_label = QLabel(f"Confidence Threshold: {self.controller.confidence}")
-        confidence_slider = QSlider(Qt.Orientation.Horizontal)
-        confidence_slider.setRange(0, 100)
-        confidence_slider.setValue(self.controller.confidence)
+        self.__confidence_slider = QSlider(Qt.Orientation.Horizontal)
+        self.__confidence_slider.setRange(0, 100)
+        self.__confidence_slider.setValue(self.controller.confidence)
 
         # Connect the slider's valueChanged signal to the update method
-        confidence_slider.valueChanged.connect(self.update_confidence)
+        self.__confidence_slider.valueChanged.connect(self.__update_confidence)
 
         # Enable/Disable Class-Specific Bounding Boxes
         __class_specific_bbox_checkbox = QCheckBox("Enable Class-Specific Bounding Boxes")
@@ -150,7 +150,7 @@ class ConfigPanel(QWidget):
         # Add to layout
         detection_layout = QVBoxLayout()
         detection_layout.addWidget(self.__confidence_label)
-        detection_layout.addWidget(confidence_slider)
+        detection_layout.addWidget(self.__confidence_slider)
         detection_layout.addWidget(__class_specific_bbox_checkbox)
         detection_layout.addWidget(self.__omit_classes_checkbox)
         detection_layout.addWidget(self.__classes_dropdown)
@@ -171,7 +171,7 @@ class ConfigPanel(QWidget):
         nth_frames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
 
         self.__nth_frame_dropdown.addItems(nth_frames)
-        self.__nth_frame_dropdown.currentIndexChanged.connect(self.update_nth_frame)
+        self.__nth_frame_dropdown.currentIndexChanged.connect(self.__update_nth_frame)
 
         # Max Bounding Box
         self.__bounding_box_limit_label = QLabel("Max Bounding Box:")
@@ -182,7 +182,7 @@ class ConfigPanel(QWidget):
 
         # Apply Button
         apply_button = QPushButton("Apply")
-        apply_button.clicked.connect(self.apply_performance_settings)
+        apply_button.clicked.connect(self.__apply_performance_settings)
 
         # Add to layout
         performance_layout.addWidget(self.__nth_frame_label)
@@ -284,12 +284,12 @@ class ConfigPanel(QWidget):
         self.__device_thread.quit()
         self.__device_thread.wait()
 
-    def update_nth_frame(self, index):
+    def __update_nth_frame(self, index):
         """Update the nth frame detection based on the selected index."""
         nth_frame = self.__nth_frame_dropdown.itemText(index)
         self.__nth_frame = int(nth_frame)
 
-    def apply_performance_settings(self):
+    def __apply_performance_settings(self):
         """Apply the performance settings."""
         if self.__bounding_box_limit.text() != "":
             max_bounding_box = self.__bounding_box_limit.text()
@@ -298,15 +298,25 @@ class ConfigPanel(QWidget):
             self.__bounding_box_limit.setText("100")
 
         nth_frame = self.__nth_frame_dropdown.currentText()
-        # TODO: Implement the logic to update the performance settings in the controller
-        print(f"Applied settings - Nth Frame: {nth_frame}, Max Bounding Box: {max_bounding_box}")
+        self.controller.set_nth_frame(int(nth_frame))
+        self.controller.set_bounding_box_max(int(max_bounding_box))
 
-    def update_fps(self, value):
+    def __update_confidence(self, value):
+        """Update the label and perform actions when the slider value changes."""
+        self.__confidence_label.setText(f"Confidence Threshold: {value}")
+        self.controller.set_confidence(value)
+
+    def set_fps(self, value):
         """Update the label and perform actions when the slider value changes."""
         self.controller.set_fps(value)
         self.__set_fps(value)
 
-    def update_confidence(self, value):
+    def set_confidence(self, value):
         """Update the label and perform actions when the slider value changes."""
+        self.__confidence_slider.setValue(value)
         self.__confidence_label.setText(f"Confidence Threshold: {value}")
-        self.controller.set_confidence(value)
+
+    def set_performance_settings(self, nth_frame, max_bounding_box):
+        """Update the nth frame and max bounding box settings."""
+        self.__nth_frame_dropdown.setCurrentIndex(nth_frame - 1)
+        self.__bounding_box_limit.setText(str(max_bounding_box))

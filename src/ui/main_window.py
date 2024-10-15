@@ -20,6 +20,8 @@ class MainWindow(QMainWindow):
         self.native_fps = 30
         self.confidence = 50
         self.__res_multiplier = 1.0
+        self.__nth_frame = 5
+        self.__bbox_max = 100
 
         # Get the available classes
         self.__class_details = self.config['class_details']
@@ -75,28 +77,16 @@ class MainWindow(QMainWindow):
         self.__multi_color_classes = value
         print(f"Multi-color classes: {value}")
 
-
-
-    def populate_device_dropdown(self) -> list:
-        """Populate the dropdown with available video input devices."""
-        devices = []
-        index = 0
-
-        while True:
-            # Redirect stderr to suppress camera indexing errors
-            sys.stderr = open(os.devnull, 'w')
-            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-            sys.stderr = sys.__stderr__  # Restore stderr
-
-            if not cap.read()[0]:
-                break
-            devices.append(f"Device {index}")
-            cap.release()
-            index += 1
-
-        # Update the dropdown in the main thread
-        return devices
-
     def update_omitted_classes(self, classes):
         """Update the omitted classes."""
         self.__omit_classes = classes
+
+    def set_nth_frame(self, value):
+        """Set the nth frame value."""
+        self.__nth_frame = value
+        print(f"Nth frame: {value}")
+
+    def set_bounding_box_max(self, value):
+        """Set the bounding box max value."""
+        self.__bbox_max = value
+        print(f"Bounding box max: {value}")
