@@ -1,6 +1,7 @@
 import logging
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton, QComboBox, QFileDialog
+from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton,
+                              QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout)
 from PyQt6.QtCore import Qt
 import cv2
 import os
@@ -25,6 +26,7 @@ class ConfigPanel(QWidget):
         self.__fps_label = None
         self.__confidence_label = None
         self.__omitted_classes = []
+        self.__fps_slider = None
 
         # Initialize the video and detection settings
         self.__init_input()
@@ -73,14 +75,29 @@ class ConfigPanel(QWidget):
         fps_slider = QSlider(Qt.Orientation.Horizontal)
         fps_slider.setRange(1, 60)
         fps_slider.setValue(self.controller.fps)
-
-        # Connect the slider's valueChanged signal to the update method
         fps_slider.valueChanged.connect(self.update_fps)
+
+        # Common FPS Buttons
+        fps_buttons_layout = QHBoxLayout()
+        for fps in [24, 30, 60]:
+            button = QPushButton(f"{fps} FPS")
+            button.clicked.connect(lambda _, f=fps: self.__set_fps(f, fps_slider))
+            fps_buttons_layout.addWidget(button)
+
+        # Resolution Settings
+        self.__resolution_label = QLabel("Resolution:")
+        self.__resolution_dropdown = QComboBox()
+        resolutions = ["0.25x", "0.5x", "0.75x", "1x", "1.25x", "1.5x", "1.75x", "2x"]
+        self.__resolution_dropdown.addItems(resolutions)
+        self.__resolution_dropdown.currentIndexChanged.connect(self.update_resolution)
 
         # Add to layout
         video_layout = QVBoxLayout()
         video_layout.addWidget(self.__fps_label)
         video_layout.addWidget(fps_slider)
+        video_layout.addLayout(fps_buttons_layout)
+        video_layout.addWidget(self.__resolution_label)
+        video_layout.addWidget(self.__resolution_dropdown)
 
         # Set the layout for the video group
         self.__video_group.setLayout(video_layout)
@@ -95,13 +112,42 @@ class ConfigPanel(QWidget):
         # Connect the slider's valueChanged signal to the update method
         confidence_slider.valueChanged.connect(self.update_confidence)
 
+        # Omit Classes Section
+        self.__omit_classes_checkbox = QCheckBox("Omit Classes")
+        self.__omit_classes_checkbox.stateChanged.connect(self.__toggle_omit_classes)
+
+        self.__classes_dropdown = QComboBox()
+        self.__classes_dropdown.addItems(self.controller.get_available_classes())
+        self.__classes_dropdown.setEnabled(False)
+
+        self.__add_class_button = QPushButton("Add Class")
+        self.__add_class_button.clicked.connect(self.__add_class_to_omit)
+        self.__add_class_button.setEnabled(False)
+
+        self.__remove_class_button = QPushButton("Remove Class")
+        self.__remove_class_button.clicked.connect(self.__remove_class_from_omit)
+        self.__remove_class_button.setEnabled(False)
+
+        self.__omitted_classes_label = QLabel("Omitted Classes: None")
+
         # Add to layout
         detection_layout = QVBoxLayout()
         detection_layout.addWidget(self.__confidence_label)
         detection_layout.addWidget(confidence_slider)
+        detection_layout.addWidget(self.__omit_classes_checkbox)
+        detection_layout.addWidget(self.__classes_dropdown)
+        detection_layout.addWidget(self.__add_class_button)
+        detection_layout.addWidget(self.__remove_class_button)
+        detection_layout.addWidget(self.__omitted_classes_label)
 
         # Set the layout for the detection group
         self.__detection_group.setLayout(detection_layout)
+
+    def update_resolution(self, index):
+        """Update the resolution based on the selected index."""
+        resolution = self.__resolution_dropdown.itemText(index)
+        # Implement the logic to update the resolution in the controller
+        print(f"Selected resolution: {resolution}")
 
     def __toggle_input_type(self):
         """Toggle between device input and file input."""
@@ -135,6 +181,40 @@ class ConfigPanel(QWidget):
             self.__device_dropdown.addItem(f"Device {index}")
             cap.release()
             index += 1
+
+    def __toggle_omit_classes(self, state):
+        """Enable or disable the omit classes section."""
+        enabled = state
+        self.__classes_dropdown.setEnabled(enabled)
+        self.__add_class_button.setEnabled(enabled)
+        self.__remove_class_button.setEnabled(enabled)
+
+    def __add_class_to_omit(self):
+        """Add the selected class to the omitted classes list."""
+        selected_class = self.__classes_dropdown.currentText()
+        if selected_class and selected_class not in self.__omitted_classes:
+            self.__omitted_classes.append(selected_class)
+            self.__update_omitted_classes_label()
+
+    def __remove_class_from_omit(self):
+        """Remove the selected class from the omitted classes list."""
+        selected_class = self.__classes_dropdown.currentText()
+        if selected_class in self.__omitted_classes:
+            self.__omitted_classes.remove(selected_class)
+            self.__update_omitted_classes_label()
+
+    def __update_omitted_classes_label(self):
+        """Update the label displaying the omitted classes."""
+        if self.__omitted_classes:
+            omitted_classes_text = ", ".join(self.__omitted_classes)
+        else:
+            omitted_classes_text = "None"
+        self.__omitted_classes_label.setText(f"Omitted Classes: {omitted_classes_text}")
+
+    def __set_fps(self, value, slider):
+        """Set the FPS value and update the slider."""
+        self.controller.set_fps(value)
+        slider.setValue(value)
 
     # Updates the fps slider value and label
     def update_fps(self, value):

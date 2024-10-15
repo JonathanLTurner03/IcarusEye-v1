@@ -7,9 +7,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # Simulate a delay for loading resources
-
-
         # Setup properties
         self.fps = 30
         self.native_fps = 30
@@ -25,6 +22,11 @@ class MainWindow(QMainWindow):
         # Create and add the ConfigPanel to the layout
         self.config_panel = ConfigPanel(self)
         self.layout.addWidget(self.config_panel)
+
+    # TODO: Implement the following methods
+    def get_available_classes(self):
+        # Return a list of available classes
+        return ["Class1", "Class2", "Class3"]
 
     def set_fps(self, value):
         """Set the FPS value."""
