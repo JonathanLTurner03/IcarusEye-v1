@@ -1,11 +1,12 @@
 import logging
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton,
-                              QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout, QLineEdit)
+                             QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout, QLineEdit)
 from PyQt6.QtCore import Qt
 import cv2
 import os
 import sys
+
 
 class ConfigPanel(QWidget):
     def __init__(self, controller):
@@ -238,6 +239,7 @@ class ConfigPanel(QWidget):
             self.__omitted_classes.remove(selected_class)
             self.__update_omitted_classes_label()
 
+    # TODO: Perform the update in the main menu
     def __update_omitted_classes_label(self):
         """Update the label displaying the omitted classes."""
         if self.__omitted_classes:
