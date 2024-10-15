@@ -93,7 +93,7 @@ class ConfigPanel(QWidget):
         self.__resolution_dropdown = QComboBox()
         resolutions = ["0.25x", "0.5x", "0.75x", "1x", "1.25x", "1.5x", "1.75x", "2x"]
         self.__resolution_dropdown.addItems(resolutions)
-        self.__resolution_dropdown.currentIndexChanged.connect(self.update_resolution)
+        self.__resolution_dropdown.currentIndexChanged.connect(self.__update_resolution)
         self.__resolution_dropdown.setCurrentIndex(3)
 
         # Add to layout
@@ -117,6 +117,10 @@ class ConfigPanel(QWidget):
         # Connect the slider's valueChanged signal to the update method
         confidence_slider.valueChanged.connect(self.update_confidence)
 
+        # Enable/Disable Class-Specific Bounding Boxes
+        __class_specific_bbox_checkbox = QCheckBox("Enable Class-Specific Bounding Boxes")
+        __class_specific_bbox_checkbox.stateChanged.connect(self.__toggle_class_specific_bbox)
+
         # Omit Classes Section
         self.__omit_classes_checkbox = QCheckBox("Omit Classes")
         self.__omit_classes_checkbox.stateChanged.connect(self.__toggle_omit_classes)
@@ -139,6 +143,7 @@ class ConfigPanel(QWidget):
         detection_layout = QVBoxLayout()
         detection_layout.addWidget(self.__confidence_label)
         detection_layout.addWidget(confidence_slider)
+        detection_layout.addWidget(__class_specific_bbox_checkbox)
         detection_layout.addWidget(self.__omit_classes_checkbox)
         detection_layout.addWidget(self.__classes_dropdown)
         detection_layout.addWidget(self.__add_class_button)
@@ -181,17 +186,11 @@ class ConfigPanel(QWidget):
         # Set the layout for the performance group
         self.__performance_group.setLayout(performance_layout)
 
-    def update_resolution(self, index):
-        """Update the resolution based on the selected index."""
-        resolution = self.__resolution_dropdown.itemText(index)
-        # Implement the logic to update the resolution in the controller
-        print(f"Selected resolution: {resolution}")
-
-    def update_nth_frame(self, index):
-        """Update the nth frame detection based on the selected index."""
-        nth_frame = self.__nth_frame_dropdown.itemText(index)
-        # TODO: Implement the logic to update the nth frame detection in the controller
-        print(f"Selected nth frame: {nth_frame}")
+    def __toggle_class_specific_bbox(self, state):
+        """Enable or disable class-specific bounding boxes."""
+        enabled = state
+        # TODO: Implement the logic to enable/disable class-specific bounding boxes in the controller
+        print(f"Class-Specific Bounding Boxes Enabled: {enabled}")
 
     def __toggle_input_type(self):
         """Toggle between device input and file input."""
@@ -229,9 +228,9 @@ class ConfigPanel(QWidget):
             self.__omitted_classes.remove(selected_class)
             self.__update_omitted_classes_label()
 
-    # TODO: Perform the update in the main menu
     def __update_omitted_classes_label(self):
         """Update the label displaying the omitted classes."""
+        # TODO: Perform the update in the main menu
         if self.__omitted_classes:
             omitted_classes_text = ", ".join(self.__omitted_classes)
         else:
@@ -248,14 +247,30 @@ class ConfigPanel(QWidget):
         self.__fps_label.setText(f"Frame Rate (FPS): {value}, Native: {self.controller.native_fps}")
         self.controller.set_fps(value)
 
+    def __update_resolution(self, index):
+        """Update the resolution based on the selected index."""
+        resolution = self.__resolution_dropdown.itemText(index)
+        # Implement the logic to update the resolution in the controller
+        print(f"Selected resolution: {resolution}")
+
+    def update_nth_frame(self, index):
+        """Update the nth frame detection based on the selected index."""
+        nth_frame = self.__nth_frame_dropdown.itemText(index)
+        # TODO: Implement the logic to update the nth frame detection in the controller
+        print(f"Selected nth frame: {nth_frame}")
+
     def apply_performance_settings(self):
         """Apply the performance settings."""
+        if self.__bounding_box_limit.text() != "":
+            max_bounding_box = self.__bounding_box_limit.text()
+        else:
+            max_bounding_box = 100
+            self.__bounding_box_limit.setText("100")
+
         nth_frame = self.__nth_frame_dropdown.currentText()
-        max_bounding_box = self.__bounding_box_limit.text()
         # TODO: Implement the logic to update the performance settings in the controller
         print(f"Applied settings - Nth Frame: {nth_frame}, Max Bounding Box: {max_bounding_box}")
 
-    # Updates the fps slider value and label
     def update_fps(self, value):
         """Update the label and perform actions when the slider value changes."""
         self.controller.set_fps(value)
