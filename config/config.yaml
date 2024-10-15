@@ -8,7 +8,7 @@ video:
   device: 0
   source: "test_flight.mp4"
   target_fps: 30
-  nth_frame: 3  # Adjust workload
+  nth_frame: 7  # Adjust workload
   max_labels: 20
 
 detection:

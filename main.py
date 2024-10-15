@@ -1,13 +1,25 @@
 import sys
 from PyQt6.QtWidgets import QApplication
-from src.ui.main_window import MainWindow  # Import the MainWindow class
+from src.ui.main_window import MainWindow
+from src.ui.loading_screen import LoadingScreen
 
-if __name__ == "__main__":
+
+def main():
     app = QApplication(sys.argv)
 
-    # Create and show the main window
-    window = MainWindow()
-    window.show()
+    # Show loading screen
+    loading_screen = LoadingScreen()
+    loading_screen.show()
 
-    # Start the application loop
+    # Initialize the main window
+    main_window = MainWindow()
+
+    # Hide loading screen and show main window
+    loading_screen.close()
+    main_window.show()
+
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
