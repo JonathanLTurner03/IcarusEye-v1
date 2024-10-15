@@ -56,6 +56,11 @@ class MainWindow(QMainWindow):
     # UI Value Setters and Getters #
 
     # Sets the resolution multiplier
+    def set_video_file(self, file_path):
+        """Set the video file path."""
+        self.video_file = file_path
+        print(f'Video file: {file_path}')
+
     def set_resolution_multiplier(self, value):
         """Set the resolution multiplier value."""
         self.__res_multiplier = value
@@ -71,7 +76,6 @@ class MainWindow(QMainWindow):
             return [f"{details['class']}: ({details['name']})" for details in self.__class_details.values()]
         return [details['class'] for details in self.__class_details.values()]
 
-    # Sets the multivalue color classes
     def set_multi_color_classes(self, value):
         """Set the multi-color classes value."""
         self.__multi_color_classes = value
