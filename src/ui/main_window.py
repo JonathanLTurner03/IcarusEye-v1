@@ -1,6 +1,7 @@
 import time
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout
 from src.ui.config_panel import ConfigPanel
+from src.ui.video_panel import VideoPanel
 import cv2
 import os
 import sys
@@ -33,11 +34,21 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_widget)
 
         # Set up the layout for the central widget
-        self.layout = QVBoxLayout(self.central_widget)
+        self.layout = QHBoxLayout(self.central_widget)
 
         # Create and add the ConfigPanel to the layout
         self.config_panel = ConfigPanel(self)
+        self.video_panel = VideoPanel(self)
+
+        self.layout.addWidget(self.video_panel)
         self.layout.addWidget(self.config_panel)
+
+        # Set the stretch factors for the layout
+        self.layout.setStretch(0, 7)  # VideoPanel takes 70% of the space
+        self.layout.setStretch(1, 3)  # ConfigPanel takes 30% of the space
+
+        self.resize(1600, 900)  # Width: 800, Height: 600
+
 
     # TODO: Implement the following methods
 
