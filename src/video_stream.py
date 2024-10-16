@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # TODO add documentation and comments
 class VideoStream:
-    def __init__(self, type, source=0, width=1920, fps=60, height=1080, backend=cv2.CAP_DSHOW):
+    def __init__(self, source, type, width=1920, fps=60, height=1080, backend=cv2.CAP_DSHOW):
         self.cap = None
         self.source = source
 
@@ -62,7 +62,6 @@ class VideoStream:
 
     def setup_capture_card(self):
         print('Not implemented.')
-
 
     def get_fps(self):
         fps = self.cap.get(cv2.CAP_PROP_FPS)

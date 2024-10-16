@@ -119,14 +119,14 @@ class VideoPanel(QWidget):
 
     def load_video_file(self, file_path):
         """Load a video file."""
-        self.__video_stream = VideoStream(file_path)
+        self.__video_stream = VideoStream(file_path, 'recording')
         self.__fps = self.__video_stream.get_fps()
-        self.__timeline_slider.setRange(0, self.__video_stream.frame_count)
+        self.__timeline_slider.setRange(0, 1)
         self.__timeline_slider.setVisible(True)
-        self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
+        self.__video_duration_label.setText(format_time(1))
         self.__play_video()
 
-    def load_live_feed(self, device_index=0):
+    def load_live_feed(self, device_index):
         """Load a live video feed from a camera."""
         self.__video_stream = VideoStream(device_index)
         self.__fps = self.__video_stream.get_fps()

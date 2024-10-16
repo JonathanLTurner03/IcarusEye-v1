@@ -54,9 +54,6 @@ class MainWindow(QMainWindow):
 
         self.resize(1600, 400)  # Width: 800, Height: 600
 
-
-    # TODO: Implement the following methods
-
     def set_fps(self, value):
         """Set the FPS value."""
         # TODO: Implement the update to the video player
@@ -67,14 +64,14 @@ class MainWindow(QMainWindow):
         # TODO: Implement the update to the detection worker
         self.confidence = value
 
-    # Helper functions
-
     # UI Value Setters and Getters #
 
     # Sets the resolution multiplier
     def set_video_file(self, file_path):
         """Set the video file path."""
         self.video_file = file_path
+        self.video_panel.load_video_file(file_path)
+        # TODO Add this shit
         print(f'Video file: {file_path}')
 
     def set_resolution_multiplier(self, value):
