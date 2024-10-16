@@ -1,5 +1,5 @@
 import time
-from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QScrollArea
 from src.ui.config_panel import ConfigPanel
 from src.ui.video_panel import VideoPanel
 import cv2
@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
 
         # Set up the layout for the central widget
         self.layout = QHBoxLayout(self.central_widget)
+        self.scroll_area = QScrollArea()
 
         # Create and add the ConfigPanel to the layout
         self.config_panel = ConfigPanel(self)
@@ -45,8 +46,11 @@ class MainWindow(QMainWindow):
         self.config_panel.set_fps(1)
         self.config_panel.set_confidence(50)
 
+        self.scroll_area.setWidget(self.config_panel)
+        self.scroll_area.setWidgetResizable(True)
+
         self.layout.addWidget(self.video_panel)
-        self.layout.addWidget(self.config_panel)
+        self.layout.addWidget(self.scroll_area)
 
         # Set the stretch factors for the layout
         self.layout.setStretch(0, 7)  # VideoPanel takes 70% of the space

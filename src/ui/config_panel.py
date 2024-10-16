@@ -280,9 +280,10 @@ class ConfigPanel(QWidget):
 
     def __populate_devices(self, devices):
         """Populate the dropdown with available video input devices."""
+        print(devices)
         self.__device_dropdown.clear()
         self.__device_dropdown.addItems(["Select Device"])
-        self.__device_dropdown.addItems(devices)
+        self.__device_dropdown.addItems([f"{index}: {name}" for index, name in devices.items()])
         self.__device_thread.quit()
         self.__device_thread.wait()
 
@@ -311,10 +312,10 @@ class ConfigPanel(QWidget):
     def __update_selected_device(self):
         """Update the selected device based on the dropdown."""
         selected_device = self.__device_dropdown.currentText()
-        if selected_device != "Select Device":
-            self.controller.set_video_device(selected_device)
-            if self.__device_dropdown.itemText(0) == "Select Device":
-                self.__device_dropdown.removeItem(0)
+        if self.__device_dropdown.itemText(0) == "Select Device" and selected_device != "Select Device":
+            self.__device_dropdown.removeItem(0)
+        elif selected_device != "Select Device":
+            self.controller.set_video_device(selected_device.split(":")[0])
 
     def set_fps(self, value):
         """Update the label and perform actions when the slider value changes."""
