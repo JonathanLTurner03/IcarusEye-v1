@@ -14,6 +14,9 @@ def main():
 
     # Initialize the main window
     main_window = MainWindow()
+    screen_size = app.primaryScreen().size()
+    main_window.resize(int(screen_size.width()/1.25), int(screen_size.height()/1.5))
+    main_window.setWindowTitle("IcarusEye - Drone Object Detection System")
 
     time.sleep(1)
     # Hide loading screen and show main window

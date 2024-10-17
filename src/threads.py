@@ -5,8 +5,6 @@ import traceback
 import logging
 import cv2
 import re
-import os
-import sys
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 

@@ -280,12 +280,12 @@ class ConfigPanel(QWidget):
 
     def __populate_devices(self, devices):
         """Populate the dropdown with available video input devices."""
-        print(devices)
         self.__device_dropdown.clear()
         self.__device_dropdown.addItems(["Select Device"])
         self.__device_dropdown.addItems([f"{index}: {name}" for index, name in devices.items()])
         self.__device_thread.quit()
         self.__device_thread.wait()
+        self.controller.set_video_device(-1)
 
     def __update_nth_frame(self, index):
         """Update the nth frame detection based on the selected index."""

@@ -56,8 +56,6 @@ class MainWindow(QMainWindow):
         self.layout.setStretch(0, 7)  # VideoPanel takes 70% of the space
         self.layout.setStretch(1, 3)  # ConfigPanel takes 30% of the space
 
-        self.resize(1600, 400)  # Width: 800, Height: 600
-
     def set_fps(self, value):
         """Set the FPS value."""
         # TODO: Implement the update to the video player
