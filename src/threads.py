@@ -98,10 +98,10 @@ def list_ffmpeg_devices():
 
     return devices
 
-def list_opencv_devices(max_devices=5):
+def list_opencv_devices(max_devices=5, api=cv2.CAP_DSHOW):
     devices = []
     for device_index in range(max_devices):
-        cap = cv2.VideoCapture(device_index)
+        cap = cv2.VideoCapture(device_index, api)
         if cap.isOpened():
             devices.append(device_index)
             cap.release()

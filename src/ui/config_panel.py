@@ -31,6 +31,8 @@ class ConfigPanel(QWidget):
         self.__nth_frame = 0
         self.__device_thread = None
         self.__device_worker = None
+        self.__refreshing = False
+
 
         # Initialize the video and detection settings
         self.__init_input()
@@ -59,7 +61,6 @@ class ConfigPanel(QWidget):
 
         # Dropdown for available input devices
         self.__device_dropdown = QComboBox()
-        self.__refresh_devices()
         self.__device_dropdown.currentIndexChanged.connect(self.__update_selected_device)
 
         self.__refresh_button = QPushButton("Refresh Devices")
@@ -79,6 +80,7 @@ class ConfigPanel(QWidget):
 
         # Set the layout for the input settings group
         self.__input_settings.setLayout(video_input_layout)
+        self.__refresh_devices()
 
     def __init_video(self):
         # Frame Rate Slider
@@ -210,7 +212,10 @@ class ConfigPanel(QWidget):
             self.__file_button.setEnabled(True)
         else:
             self.__device_dropdown.setEnabled(True)
-            self.__refresh_button.setEnabled(True)
+            if self.__refreshing:
+                self.__refresh_button.setEnabled(False)
+            else:
+                self.__refresh_button.setEnabled(True)
             self.__file_button.setEnabled(False)
 
     def __select_video_file(self):
@@ -225,6 +230,7 @@ class ConfigPanel(QWidget):
         self.__classes_dropdown.setEnabled(enabled)
         self.__add_class_button.setEnabled(enabled)
         self.__remove_class_button.setEnabled(enabled)
+        self.__is_live = False
         if not enabled:
             self.__omitted_classes_label.setText("Omitted Classes: (disabled)")
         else:
@@ -276,6 +282,9 @@ class ConfigPanel(QWidget):
         self.__device_worker.moveToThread(self.__device_thread)
         self.__device_thread.started.connect(self.__device_worker.run)
         self.__device_worker.devices_scanned.connect(self.__populate_devices)
+        self.__refreshing = True
+        self.__refresh_button.setText("Refreshing Devices...")
+        self.__refresh_button.setEnabled(False)
         self.__device_thread.start()
 
     def __populate_devices(self, devices):
@@ -286,6 +295,9 @@ class ConfigPanel(QWidget):
         self.__device_thread.quit()
         self.__device_thread.wait()
         self.controller.set_video_device(-1)
+        self.__refresh_button.setText("Refresh Devices")
+        self.__refreshing = False
+        self.__refresh_button.setEnabled(self.__device_dropdown.isEnabled())
 
     def __update_nth_frame(self, index):
         """Update the nth frame detection based on the selected index."""
