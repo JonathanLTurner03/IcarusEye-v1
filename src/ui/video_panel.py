@@ -76,7 +76,7 @@ class VideoPanel(QWidget):
 
     def __play_video(self):
         """Play the video."""
-        if self.__video_stream:
+        if self.__video_stream is not None:
             self.__is_playing = True
             self.__play_pause_button.setText("Pause")
             self.__timer.start(1000 // self.__fps)
@@ -85,9 +85,10 @@ class VideoPanel(QWidget):
 
     def __pause_video(self):
         """Pause the video."""
-        self.__is_playing = False
-        self.__play_pause_button.setText("Play")
-        self.__timer.stop()
+        if self.__video_stream is not None:
+            self.__is_playing = False
+            self.__play_pause_button.setText("Play")
+            self.__timer.stop()
 
     def __stop_video(self):
         """Stop the video."""
@@ -100,7 +101,7 @@ class VideoPanel(QWidget):
 
     def __seek_video(self, position):
         """Seek to a specific position in the video."""
-        if self.__video_stream:
+        if self.__video_stream is not None:
             frame_number = int(position * self.__video_stream.frame_count / 100)
             self.__video_stream.set_frame_position(frame_number)
             self.update_frame()

@@ -107,16 +107,54 @@ def list_opencv_devices(max_devices=5, api=cv2.CAP_DSHOW):
             cap.release()
     return devices
 
+def list_ffmpeg_device_details(device_name):
+    try:
+        command = ['ffmpeg', '-f', 'dshow', '-list_options', 'true', '-i', f'video={device_name}']
+        result = subprocess.run(command, stderr=subprocess.PIPE, text=True)
+        output = result.stderr
+
+        # Updated pattern to capture more accurately based on the example output provided
+        detail_pattern = re.compile(
+            r'(vcodec|pixel_format)=([^ ]+) +min s=(\d+x\d+) fps=(\d+(\.\d+)?) +max s=(\d+x\d+) fps=(\d+(\.\d+)?)'
+        )
+
+        details = detail_pattern.findall(output)
+        # Parse details into a structured list
+        codecs_info = [{
+            'codec': codec_type,
+            'format': codec,
+            'min_resolution': min_res,
+            'min_fps': float(min_fps),
+            'max_resolution': max_res,
+            'max_fps': float(max_fps)
+        } for codec_type, codec, min_res, min_fps, _, max_res, max_fps, _ in details]
+
+        return codecs_info
+    except Exception as e:
+        print(f"Error getting device details with FFmpeg: {e}")
+        return []
+
 class DeviceScanner(QObject):
-    devices_scanned = pyqtSignal(dict)
+    devices_scanned = pyqtSignal(list)
 
     def run(self):
-        """Scan for available video input devices."""
+        """Scan for available video input devices and their details."""
+        device_info = []
         if is_ffmpeg_installed():
-            ff_mppeg_devices = list_ffmpeg_devices()
-            opencv_devices = list_opencv_devices(max_devices=len(ff_mppeg_devices))
-            devices = {index: name for index, name in zip(opencv_devices, ff_mppeg_devices)}
+            ffmpeg_devices = list_ffmpeg_devices()
+            opencv_devices = list_opencv_devices(max_devices=len(ffmpeg_devices))
+            for index, device_name in zip(opencv_devices, ffmpeg_devices):
+                details = list_ffmpeg_device_details(device_name)
+                device_info.append({
+                    'index': index,
+                    'name': device_name,
+                    'details': details
+                })
         else:
-            devices = {index: index for index in list_opencv_devices()}
-
-        self.devices_scanned.emit(devices)
+            for index in list_opencv_devices():
+                device_info.append({
+                    'index': index,
+                    'name': f"Device {index}",
+                    'details': []
+                })
+        self.devices_scanned.emit(device_info)

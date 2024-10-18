@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
         self.fps = 0
         self.native_fps = 0
         self.confidence = 50
-        self.__res_multiplier = 1.0
+        self.__res = None
         self.__nth_frame = 1
         self.__bbox_max = 100
         self.__device_id = None
@@ -56,11 +56,6 @@ class MainWindow(QMainWindow):
         self.layout.setStretch(0, 7)  # VideoPanel takes 70% of the space
         self.layout.setStretch(1, 3)  # ConfigPanel takes 30% of the space
 
-    def set_fps(self, value):
-        """Set the FPS value."""
-        # TODO: Implement the update to the video player
-        self.fps = value
-
     def set_confidence(self, value):
         """Set the confidence threshold value."""
         # TODO: Implement the update to the detection worker
@@ -76,10 +71,10 @@ class MainWindow(QMainWindow):
         # TODO Add this shit
         print(f'Video file: {file_path}')
 
-    def set_resolution_multiplier(self, value):
+    def set_resolution(self, value, fps):
         """Set the resolution multiplier value."""
-        self.__res_multiplier = value
-        print(f'Resolution multiplier: {value}')
+        self.__res = value
+        self.fps = fps
 
     # Gets the list of available classes
     def get_available_classes(self):

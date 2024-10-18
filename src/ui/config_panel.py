@@ -32,6 +32,10 @@ class ConfigPanel(QWidget):
         self.__device_thread = None
         self.__device_worker = None
         self.__refreshing = False
+        self.__codec_dropdown = None
+        self.__pixel_format_dropdown = None
+        self.__codec_label = None
+        self.__pixel_format_label = None
 
 
         # Initialize the video and detection settings
@@ -85,31 +89,42 @@ class ConfigPanel(QWidget):
     def __init_video(self):
         # Frame Rate Slider
         self.__fps_label = QLabel(f"Frame Rate (FPS): {self.controller.fps}, Native: {self.controller.native_fps}")
-        fps_slider = QSlider(Qt.Orientation.Horizontal)
-        fps_slider.setRange(1, 60)
-        fps_slider.setValue(self.controller.fps)
-        fps_slider.valueChanged.connect(self.__set_fps)
+        self.__fps_slider = QSlider(Qt.Orientation.Horizontal)
+        self.__fps_slider.setRange(1, 60)
+        self.__fps_slider.setValue(self.controller.fps)
+        self.__fps_slider.valueChanged.connect(self.__set_fps)
 
         # Common FPS Buttons
         fps_buttons_layout = QHBoxLayout()
         for fps in [24, 30, 60]:
             button = QPushButton(f"{fps} FPS")
-            button.clicked.connect(lambda _, f=fps: self.__set_fps_button(f, fps_slider))
+            button.clicked.connect(lambda _, f=fps: self.__set_fps_button(f, self.__fps_slider))
             fps_buttons_layout.addWidget(button)
+
+        # Codec Settings
+        self.__codec_label = QLabel("Codec:")
+        self.__codec_dropdown = QComboBox()
+        self.__codec_dropdown.currentIndexChanged.connect(self.__update_codec_selection)
+
+        # Pixel Format Settings
+        self.__pixel_format_label = QLabel("Pixel Format:")
+        self.__pixel_format_dropdown = QComboBox()
+        self.__pixel_format_dropdown.currentIndexChanged.connect(self.__update_pixel_format_selection)
 
         # Resolution Settings
         self.__resolution_label = QLabel("Resolution:")
         self.__resolution_dropdown = QComboBox()
-        resolutions = ["0.25x", "0.5x", "0.75x", "1x", "1.25x", "1.5x", "1.75x", "2x"]
-        self.__resolution_dropdown.addItems(resolutions)
         self.__resolution_dropdown.currentIndexChanged.connect(self.__update_resolution)
-        self.__resolution_dropdown.setCurrentIndex(3)
 
         # Add to layout
         video_layout = QVBoxLayout()
         video_layout.addWidget(self.__fps_label)
-        video_layout.addWidget(fps_slider)
+        video_layout.addWidget(self.__fps_slider)
         video_layout.addLayout(fps_buttons_layout)
+        video_layout.addWidget(self.__codec_label)
+        video_layout.addWidget(self.__codec_dropdown)
+        video_layout.addWidget(self.__pixel_format_label)
+        video_layout.addWidget(self.__pixel_format_dropdown)
         video_layout.addWidget(self.__resolution_label)
         video_layout.addWidget(self.__resolution_dropdown)
 
@@ -224,6 +239,120 @@ class ConfigPanel(QWidget):
         if file_name:
             self.controller.set_video_file(file_name)
 
+    def __refresh_devices(self):
+        """Refresh the list of available devices."""
+        self.__device_thread = QThread()
+        self.__device_worker = DeviceScanner()
+        self.__device_worker.moveToThread(self.__device_thread)
+        self.__device_thread.started.connect(self.__device_worker.run)
+        self.__device_worker.devices_scanned.connect(self.__populate_devices)
+        self.__refreshing = True
+        self.__refresh_button.setText("Refreshing Devices...")
+        self.__refresh_button.setEnabled(False)
+        self.__device_thread.start()
+
+    def __populate_devices(self, devices):
+        """Populate the dropdown with available video input devices."""
+        self.__device_dropdown.clear()
+        self.__device_dropdown.addItems(["Select Device"])
+
+        # Populate the dropdown with device names and indices
+        for device in devices:
+            index = device['index']
+            name = device['name']
+            self.__device_dropdown.addItem(f"{index}: {name}", device)
+
+        self.__device_thread.quit()
+        self.__device_thread.wait()
+        self.controller.set_video_device(-1)
+        self.__refresh_button.setText("Refresh Devices")
+        self.__refreshing = False
+        self.__refresh_button.setEnabled(True)
+
+        # Automatically populate codecs if devices are available
+        if devices:
+            self.__update_selected_device()
+
+    def __update_selected_device(self):
+        """Update the selected device based on the dropdown."""
+        selected_device_index = self.__device_dropdown.currentIndex()
+        if selected_device_index > 0:
+            selected_device = self.__device_dropdown.itemData(selected_device_index)
+            self.controller.set_video_device(selected_device['index'])
+            self.__populate_codecs(selected_device['details'])
+
+    def __populate_codecs(self, details):
+        """Populate the codec dropdown based on the selected device's capabilities."""
+        self.__codec_dropdown.clear()
+        self.__codec_dropdown.addItems(["Select Codec"])
+
+        codecs = set(detail['codec'] for detail in details)
+        for codec in codecs:
+            self.__codec_dropdown.addItem(codec)
+
+    def __populate_resolutions(self, details, codec, pixel_format):
+        """Populate the resolution dropdown based on selected codec and pixel format, sorted by width (highest to lowest)."""
+        self.__resolution_dropdown.clear()
+        self.__resolution_dropdown.addItems(["Select Resolution"])
+
+        # Filter and sort the details by width in descending order
+        sorted_details = sorted(
+            (detail for detail in details if detail['codec'] == codec and detail['format'] == pixel_format),
+            key=lambda d: int(d['max_resolution'].split('x')[0]),  # Sort by the width part of the resolution
+            reverse=True
+        )
+
+        for detail in sorted_details:
+            min_res = detail['min_resolution']
+            max_res = detail['max_resolution']
+            min_fps = detail['min_fps']
+            max_fps = detail['max_fps']
+            resolution_text = f"{max_res} (FPS: {min_fps} - {max_fps})"
+            self.__resolution_dropdown.addItem(resolution_text, detail)
+
+    def __update_resolution(self, index):
+        """Update the resolution based on the selected index."""
+        selected_detail = self.__resolution_dropdown.itemData(index)
+        if selected_detail:
+            min_resolution = selected_detail['min_resolution']
+            max_resolution = selected_detail['max_resolution']
+            min_fps = selected_detail['min_fps']
+            max_fps = selected_detail['max_fps']
+
+            # For simplicity, you might set the resolution to the max available resolution and FPS
+            self.controller.set_resolution(max_resolution, max_fps)
+
+            # Update the resolution label or any other relevant UI elements
+            self.__resolution_label.setText(f"Resolution: {max_resolution}, FPS: {max_fps}")
+
+    def __update_codec_selection(self, index):
+        """Update the pixel formats based on the selected codec."""
+        selected_device_index = self.__device_dropdown.currentIndex()
+        if selected_device_index > 0:
+            selected_device = self.__device_dropdown.itemData(selected_device_index)
+            selected_codec = self.__codec_dropdown.itemText(index)
+            self.__populate_pixel_formats(selected_device['details'], selected_codec)
+
+    def __populate_pixel_formats(self, details, codec):
+        """Populate the pixel format dropdown based on the selected codec."""
+        self.__pixel_format_dropdown.clear()
+        self.__pixel_format_dropdown.addItems(["Select Pixel Format"])
+
+        pixel_formats = set(detail['format'] for detail in details if detail['codec'] == codec)
+        for pixel_format in pixel_formats:
+            self.__pixel_format_dropdown.addItem(pixel_format)
+
+    def __update_pixel_format_selection(self, index):
+        """Update the resolutions based on the selected pixel format."""
+        selected_device_index = self.__device_dropdown.currentIndex()
+        selected_codec_index = self.__codec_dropdown.currentIndex()
+        selected_pixel_format = self.__pixel_format_dropdown.itemText(index)
+
+        if selected_device_index > 0 and selected_codec_index > 0 and selected_pixel_format != "Select Pixel Format":
+            selected_device = self.__device_dropdown.itemData(selected_device_index)
+            selected_codec = self.__codec_dropdown.itemText(selected_codec_index)
+            self.__populate_resolutions(selected_device['details'], selected_codec, selected_pixel_format)
+
     def __toggle_omit_classes(self, state):
         """Enable or disable the omit classes section."""
         enabled = state
@@ -268,36 +397,6 @@ class ConfigPanel(QWidget):
     def __set_fps(self, value):
         """Set the FPS value and update the slider."""
         self.__fps_label.setText(f"Frame Rate (FPS): {value}, Native: {self.controller.native_fps}")
-        self.controller.set_fps(value)
-
-    def __update_resolution(self, index):
-        """Update the resolution based on the selected index."""
-        resolution = self.__resolution_dropdown.itemText(index)
-        self.controller.set_resolution_multiplier(float(resolution[:-1]))
-
-    def __refresh_devices(self):
-        """Refresh the list of available devices."""
-        self.__device_thread = QThread()
-        self.__device_worker = DeviceScanner()
-        self.__device_worker.moveToThread(self.__device_thread)
-        self.__device_thread.started.connect(self.__device_worker.run)
-        self.__device_worker.devices_scanned.connect(self.__populate_devices)
-        self.__refreshing = True
-        self.__refresh_button.setText("Refreshing Devices...")
-        self.__refresh_button.setEnabled(False)
-        self.__device_thread.start()
-
-    def __populate_devices(self, devices):
-        """Populate the dropdown with available video input devices."""
-        self.__device_dropdown.clear()
-        self.__device_dropdown.addItems(["Select Device"])
-        self.__device_dropdown.addItems([f"{index}: {name}" for index, name in devices.items()])
-        self.__device_thread.quit()
-        self.__device_thread.wait()
-        self.controller.set_video_device(-1)
-        self.__refresh_button.setText("Refresh Devices")
-        self.__refreshing = False
-        self.__refresh_button.setEnabled(self.__device_dropdown.isEnabled())
 
     def __update_nth_frame(self, index):
         """Update the nth frame detection based on the selected index."""
@@ -320,14 +419,6 @@ class ConfigPanel(QWidget):
         """Update the label and perform actions when the slider value changes."""
         self.__confidence_label.setText(f"Confidence Threshold: {value}")
         self.controller.set_confidence(value)
-
-    def __update_selected_device(self):
-        """Update the selected device based on the dropdown."""
-        selected_device = self.__device_dropdown.currentText()
-        if self.__device_dropdown.itemText(0) == "Select Device" and selected_device != "Select Device":
-            self.__device_dropdown.removeItem(0)
-        elif selected_device != "Select Device":
-            self.controller.set_video_device(selected_device.split(":")[0])
 
     def set_fps(self, value):
         """Update the label and perform actions when the slider value changes."""

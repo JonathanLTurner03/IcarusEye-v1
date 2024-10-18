@@ -59,10 +59,6 @@ class VideoStream:
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
 
-
-    def setup_capture_card(self):
-        print('Not implemented.')
-
     def get_fps(self):
         fps = self.cap.get(cv2.CAP_PROP_FPS)
         if fps == 0:
