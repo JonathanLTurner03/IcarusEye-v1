@@ -107,32 +107,49 @@ def list_opencv_devices(max_devices=5, api=cv2.CAP_DSHOW):
             cap.release()
     return devices
 
+
 def list_ffmpeg_device_details(device_name):
     try:
         command = ['ffmpeg', '-f', 'dshow', '-list_options', 'true', '-i', f'video={device_name}']
         result = subprocess.run(command, stderr=subprocess.PIPE, text=True)
         output = result.stderr
 
-        # Updated pattern to capture more accurately based on the example output provided
+        # Pattern to match vcodec details with resolution and framerate
         detail_pattern = re.compile(
-            r'(vcodec|pixel_format)=([^ ]+) +min s=(\d+x\d+) fps=(\d+(\.\d+)?) +max s=(\d+x\d+) fps=(\d+(\.\d+)?)'
+            r'vcodec=([^ ]+) +min s=(\d+x\d+) fps=(\d+(\.\d+)?) +max s=(\d+x\d+) fps=(\d+(\.\d+)?)'
         )
 
-        details = detail_pattern.findall(output)
-        # Parse details into a structured list
-        codecs_info = [{
-            'codec': codec_type,
-            'format': codec,
-            'min_resolution': min_res,
-            'min_fps': float(min_fps),
-            'max_resolution': max_res,
-            'max_fps': float(max_fps)
-        } for codec_type, codec, min_res, min_fps, _, max_res, max_fps, _ in details]
+        codecs_info = {}
 
-        return codecs_info
+        lines = output.splitlines()
+        for line in lines:
+            # Check if the line contains a codec (vcodec) and its details
+            detail_match = detail_pattern.search(line)
+            if detail_match:
+                codec, min_res, min_fps, _, max_res, max_fps, _ = detail_match.groups()
+                if codec not in codecs_info:
+                    codecs_info[codec] = {
+                        'codec': codec,
+                        'resolutions': []
+                    }
+
+                resolution_entry = {
+                    'min_resolution': min_res,
+                    'max_resolution': max_res,
+                    'min_fps': float(min_fps),
+                    'max_fps': float(max_fps)
+                }
+
+                # Add the resolution details under the matched codec
+                if resolution_entry not in codecs_info[codec]['resolutions']:
+                    codecs_info[codec]['resolutions'].append(resolution_entry)
+
+        return list(codecs_info.values())
+
     except Exception as e:
         print(f"Error getting device details with FFmpeg: {e}")
         return []
+
 
 class DeviceScanner(QObject):
     devices_scanned = pyqtSignal(list)
