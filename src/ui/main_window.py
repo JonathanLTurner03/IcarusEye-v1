@@ -1,4 +1,6 @@
 import time
+from os.path import split
+
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QScrollArea
 from src.ui.config_panel import ConfigPanel
 from src.ui.video_panel import VideoPanel
@@ -21,9 +23,10 @@ class MainWindow(QMainWindow):
         self.native_fps = 0
         self.confidence = 50
         self.__res = None
+        self.__device_id = None
+        self.__codec = None
         self.__nth_frame = 1
         self.__bbox_max = 100
-        self.__device_id = None
 
         # Get the available classes
         self.__class_details = self.config['class_details']
@@ -71,10 +74,32 @@ class MainWindow(QMainWindow):
         # TODO Add this shit
         print(f'Video file: {file_path}')
 
-    def set_resolution(self, value, fps):
+    def set_resolution(self, res, fps):
         """Set the resolution multiplier value."""
-        self.__res = value
+        update_res = False
+        update_fps = True
+        if res is not self.__res:
+            update_res = True
+        if fps is not self.fps:
+            update_fps = True
+
+        self.__res = res
         self.fps = fps
+
+        if res and fps and self.__codec and self.__device_id != -1 and self.__device_id:
+            if self.video_panel.get_video_stream() is not None:
+                # changes resolution and fps for the current file.
+                if update_fps:
+                    self.video_panel.get_video_stream().set(cv2.CAP_PROP_FPS, fps)
+                if update_res:
+                    width, height = map(int, res.split('x'))
+                    self.video_panel.get_video_stream().set(cv2.CAP_PROP_FRAME_WIDTH, width)
+                    self.video_panel.get_video_stream().set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            else:
+                # set a new video device
+                print(
+                    f'new video device with: {res} @ {fps} on device id {self.__device_id} with vcodec {self.__codec}')
+
 
     # Gets the list of available classes
     def get_available_classes(self):
@@ -105,7 +130,17 @@ class MainWindow(QMainWindow):
         self.__bbox_max = value
         print(f"Bounding box max: {value}")
 
+    def set_codec(self, codec):
+        """Set the codec."""
+        self.__codec = codec
+        print(f"Codec: {codec}")
+
     def set_video_device(self, device):
         """Set the video device."""
         self.__device_id = device
-        print(f'Video device: {device}')
+
+        if device == -1:
+            # Clear the video device settings.
+            self.set_codec(None)
+            self.set_resolution(None, None)
+            print("Video device removed.")

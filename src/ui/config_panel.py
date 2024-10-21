@@ -288,6 +288,7 @@ class ConfigPanel(QWidget):
             self.__codec_dropdown.addItem(details[0]['codec'], details[0])
             self.__codec_dropdown.setCurrentIndex(0)
             self.__populate_resolutions(details[0]['resolutions'])
+            self.controller.set_codec(details[0]['codec'])
         else:
             self.__codec_dropdown.addItems(["Select Codec"])
             # If there are multiple codecs, populate the dropdown normally
@@ -335,6 +336,7 @@ class ConfigPanel(QWidget):
             selected_detail = self.__codec_dropdown.itemData(index)
             if selected_detail:
                 self.__populate_resolutions(selected_detail['resolutions'])
+                self.controller.set_codec(selected_detail['codec'])
 
     def __toggle_omit_classes(self, state):
         """Enable or disable the omit classes section."""

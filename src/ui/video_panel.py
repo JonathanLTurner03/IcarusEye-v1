@@ -67,6 +67,19 @@ class VideoPanel(QWidget):
         self.__is_playing = False
         self.__fps = 30  # Default FPS
 
+    def set_video_stream(self, video_stream):
+        """Set the video stream."""
+        self.__video_stream = video_stream
+        self.__fps = self.__video_stream.get_fps()
+        self.__timeline_slider.setRange(0, 1)
+        self.__timeline_slider.setVisible(True)
+        self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
+        self.__play_video()
+
+    def get_video_stream(self):
+        """Get the video stream."""
+        return self.__video_stream
+
     def __toggle_play_pause(self):
         """Toggle between play and pause."""
         if self.__is_playing:
@@ -125,12 +138,4 @@ class VideoPanel(QWidget):
         self.__timeline_slider.setRange(0, 1)
         self.__timeline_slider.setVisible(True)
         self.__video_duration_label.setText(format_time(1))
-        self.__play_video()
-
-    def load_live_feed(self, device_index):
-        """Load a live video feed from a camera."""
-        self.__video_stream = VideoStream(device_index)
-        self.__fps = self.__video_stream.get_fps()
-        self.__timeline_slider.setRange(0, 0)  # No timeline for live feed
-        self.__timeline_slider.setVisible(False)
         self.__play_video()
