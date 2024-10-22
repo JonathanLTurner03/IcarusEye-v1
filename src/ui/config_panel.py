@@ -101,16 +101,6 @@ class ConfigPanel(QWidget):
             button.clicked.connect(lambda _, f=fps: self.__set_fps_button(f, self.__fps_slider))
             fps_buttons_layout.addWidget(button)
 
-        # Codec and Pixel Format combined into a single dropdown
-        self.__codec_label = QLabel("Codec and Format:")
-        self.__codec_dropdown = QComboBox()
-        self.__codec_dropdown.currentIndexChanged.connect(self.__update_codec_selection)
-
-        # Resolution Settings
-        self.__resolution_label = QLabel("Resolution:")
-        self.__resolution_dropdown = QComboBox()
-        self.__resolution_dropdown.currentIndexChanged.connect(self.__update_resolution)
-
         # Add to layout
         video_layout = QVBoxLayout()
         video_layout.addWidget(self.__fps_label)
@@ -118,8 +108,6 @@ class ConfigPanel(QWidget):
         video_layout.addLayout(fps_buttons_layout)
         video_layout.addWidget(self.__codec_label)
         video_layout.addWidget(self.__codec_dropdown)
-        video_layout.addWidget(self.__resolution_label)
-        video_layout.addWidget(self.__resolution_dropdown)
 
         # Set the layout for the video group
         self.__video_group.setLayout(video_layout)
@@ -247,15 +235,12 @@ class ConfigPanel(QWidget):
     def __populate_devices(self, devices):
         """Populate the dropdown with available video input devices."""
         self.__device_dropdown.clear()
-        self.__codec_dropdown.clear()
-        self.__resolution_dropdown.clear()
-        self.__resolution_label.setText("Resolution: ")
         self.__device_dropdown.addItems(["Select Device"])
 
         # Populate the dropdown with device names and indices
         for device in devices:
-            index = device['index']
-            name = device['name']
+            index = device[0]
+            name = device[1]
             self.__device_dropdown.addItem(f"{index}: {name}", device)
 
         self.__device_thread.quit()
@@ -265,78 +250,13 @@ class ConfigPanel(QWidget):
         self.__refreshing = False
         self.__refresh_button.setEnabled(True)
 
-        # Automatically populate codecs if devices are available
-        if devices:
-            self.__update_selected_device()
-
     def __update_selected_device(self):
         """Update the selected device based on the dropdown."""
         selected_device_index = self.__device_dropdown.currentIndex()
         if selected_device_index > 0:
             selected_device = self.__device_dropdown.itemData(selected_device_index)
-            self.controller.set_video_device(selected_device['index'])
-            self.__populate_codecs(selected_device['details'])
+            self.controller.set_video_device(selected_device[0])
 
-    def __populate_codecs(self, details):
-        """Populate the codec dropdown based on the selected device's capabilities."""
-        self.__codec_dropdown.clear()
-        self.__resolution_dropdown.clear()
-        self.__resolution_label.setText("Resolution: ")
-
-        if len(details) == 1:
-            # If there's only one codec, select it automatically
-            self.__codec_dropdown.addItem(details[0]['codec'], details[0])
-            self.__codec_dropdown.setCurrentIndex(0)
-            self.__populate_resolutions(details[0]['resolutions'])
-            self.controller.set_codec(details[0]['codec'])
-        else:
-            self.__codec_dropdown.addItems(["Select Codec"])
-            # If there are multiple codecs, populate the dropdown normally
-            for detail in details:
-                codec = detail['codec']
-                self.__codec_dropdown.addItem(codec, detail)
-
-    def __populate_resolutions(self, resolutions):
-        """Populate the resolution dropdown based on the selected codec, sorted by width (highest to lowest)."""
-        self.__resolution_dropdown.clear()
-        self.__resolution_dropdown.addItems(["Select Resolution"])
-
-        sorted_resolutions = sorted(
-            resolutions,
-            key=lambda r: int(r['max_resolution'].split('x')[0]),  # Sort by width
-            reverse=True
-        )
-
-        for res in sorted_resolutions:
-            min_res = res['min_resolution']
-            max_res = res['max_resolution']
-            min_fps = int(res['min_fps'])
-            max_fps = int(res['max_fps'])
-            resolution_text = f"{max_res} (FPS: {min_fps} - {max_fps})"
-            self.__resolution_dropdown.addItem(resolution_text, res)
-
-    def __update_resolution(self, index):
-        """Update the resolution based on the selected index."""
-        selected_detail = self.__resolution_dropdown.itemData(index)
-        if selected_detail:
-            min_resolution = selected_detail['min_resolution']
-            max_resolution = selected_detail['max_resolution']
-            min_fps = int(selected_detail['min_fps'])
-            max_fps = int(selected_detail['max_fps'])
-
-            # Set the resolution to the max available resolution and FPS
-            self.controller.set_resolution(max_resolution, max_fps)
-
-            # Update the resolution label or any other relevant UI elements
-            self.__resolution_label.setText(f"Resolution: {max_resolution}, FPS: {max_fps}")
-
-    def __update_codec_selection(self, index):
-        """Update the resolutions based on the selected codec."""
-        if index > 0:
-            selected_detail = self.__codec_dropdown.itemData(index)
-            if selected_detail:
-                self.__populate_resolutions(selected_detail['resolutions'])
-                self.controller.set_codec(selected_detail['codec'])
 
     def __toggle_omit_classes(self, state):
         """Enable or disable the omit classes section."""
