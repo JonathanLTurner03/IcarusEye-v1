@@ -67,13 +67,13 @@ class VideoPanel(QWidget):
         self.__is_playing = False
         self.__fps = 30  # Default FPS
 
-    def set_video_stream(self, video_stream):
+    def set_video_stream(self, video_stream: VideoStream):
         """Set the video stream."""
         self.__video_stream = video_stream
         self.__fps = self.__video_stream.get_fps()
         self.__timeline_slider.setRange(0, 1)
         self.__timeline_slider.setVisible(True)
-        self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
+        #self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
         self.__play_video()
 
     def get_video_stream(self):
@@ -92,7 +92,7 @@ class VideoPanel(QWidget):
         if self.__video_stream is not None:
             self.__is_playing = True
             self.__play_pause_button.setText("Pause")
-            self.__timer.start(1000 // self.__fps)
+            self.__timer.start(1000 // int(self.__fps))
         else:
             QMessageBox.warning(self, "Error", "No video or device selected.")
 
@@ -122,14 +122,13 @@ class VideoPanel(QWidget):
     def update_frame(self):
         """Update the OpenGL widget with the current frame."""
         if self.__video_stream:
-            ret, frame = self.__video_stream.read()
-            if ret:
-                self.__opengl_widget.update_frame(frame)
+            frame = self.__video_stream.get_frame()
+
+            #self.__opengl_widget.update_frame(frame)
+            if False: # TODO turn on if a video, off if not.
                 current_position = int(self.__video_stream.get_frame_position() * 100 / self.__video_stream.frame_count)
                 self.__timeline_slider.setValue(current_position)
                 self.__current_duration_label.setText(format_time(self.__video_stream.get_frame_position() / self.__fps))
-            else:
-                self.__stop_video()
 
     def load_video_file(self, file_path):
         """Load a video file."""

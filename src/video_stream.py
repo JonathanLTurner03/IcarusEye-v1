@@ -25,7 +25,7 @@ class VideoStream:
 
     def _setup_camera(self):
         # Open the camera using DirectShow (Windows)
-        cap = cv2.VideoCapture(self.source, backend)
+        cap = cv2.VideoCapture(self.source, self.backend)
 
         # Check if the camera opened successfully
         if not cap.isOpened():
@@ -38,7 +38,7 @@ class VideoStream:
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
 
         # Optionally limit the frame rate to avoid high processing loads at 1080p
-        cap.set(cv2.CAP_PROP_FPS, fps)  # Adjust as needed
+        cap.set(cv2.CAP_PROP_FPS, self.fps)  # Adjust as needed
 
         # Set the camera to use the MJPEG codec (FOURCC for MJPG)
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -71,6 +71,9 @@ class VideoStream:
         if ret:
             return frame
         return None
+
+    def get_frame_position(self):
+        return self.cap.get_frame_postition()
 
     def release(self):
         self.cap.release()

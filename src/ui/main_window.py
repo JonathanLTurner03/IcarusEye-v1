@@ -9,6 +9,8 @@ import os
 import sys
 import yaml
 
+from src.video_stream import VideoStream
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -22,9 +24,7 @@ class MainWindow(QMainWindow):
         self.fps = 0
         self.native_fps = 0
         self.confidence = 50
-        self.__res = None
         self.__device_id = None
-        self.__codec = None
         self.__nth_frame = 1
         self.__bbox_max = 100
 
@@ -106,6 +106,8 @@ class MainWindow(QMainWindow):
     def set_video_device(self, device):
         """Set the video device."""
         self.__device_id = device
+        if device != -1:
+            self.video_panel.set_video_stream(VideoStream(device, 'camera'))
 
         if device == -1:
             # Clear the video device settings.
