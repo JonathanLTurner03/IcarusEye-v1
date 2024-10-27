@@ -88,6 +88,7 @@ class VideoPanel(QWidget):
         self.__timer = QTimer(self)
         self.__timer.timeout.connect(self.update_frame)
         self.__timer.start(int(1000/self.__fps))
+        self.__play_video()
         #self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
 
     def get_video_stream(self):
