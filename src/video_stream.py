@@ -69,7 +69,7 @@ class VideoStream:
     def get_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            return frame
+            return ret, frame
         return None
 
     def get_frame_position(self):

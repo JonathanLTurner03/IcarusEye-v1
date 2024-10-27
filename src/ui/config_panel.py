@@ -32,11 +32,6 @@ class ConfigPanel(QWidget):
         self.__device_thread = None
         self.__device_worker = None
         self.__refreshing = False
-        self.__codec_dropdown = None
-        self.__pixel_format_dropdown = None
-        self.__codec_label = None
-        self.__pixel_format_label = None
-
 
         # Initialize the video and detection settings
         self.__init_input()
@@ -106,8 +101,6 @@ class ConfigPanel(QWidget):
         video_layout.addWidget(self.__fps_label)
         video_layout.addWidget(self.__fps_slider)
         video_layout.addLayout(fps_buttons_layout)
-        video_layout.addWidget(self.__codec_label)
-        video_layout.addWidget(self.__codec_dropdown)
 
         # Set the layout for the video group
         self.__video_group.setLayout(video_layout)

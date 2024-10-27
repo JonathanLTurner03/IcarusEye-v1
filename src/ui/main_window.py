@@ -2,6 +2,8 @@ import time
 from os.path import split
 
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QScrollArea
+from torchvision.tv_tensors import Video
+
 from src.ui.config_panel import ConfigPanel
 from src.ui.video_panel import VideoPanel
 import cv2
@@ -69,10 +71,10 @@ class MainWindow(QMainWindow):
     # Sets the resolution multiplier
     def set_video_file(self, file_path):
         """Set the video file path."""
-        self.video_file = file_path
-        self.video_panel.load_video_file(file_path)
-        # TODO Add this shit
-        print(f'Video file: {file_path}')
+        cap = VideoStream(file_path, 'recording')
+        self.fps = cap.get_fps()
+        self.native_fps = self.fps
+        self.video_panel.set_video_stream(cap)
 
     # Gets the list of available classes
     def get_available_classes(self):

@@ -4,6 +4,10 @@ from PyQt6.QtCore import Qt, QTimer
 from src.video_stream import VideoStream
 from src.opengl_video_widget import OpenGLVideoWidget
 import cv2
+import cupy as cp
+import yaml
+import torch
+from ultralytics import YOLO
 
 
 def format_time(seconds):
@@ -18,8 +22,13 @@ class VideoPanel(QWidget):
         super().__init__()
         self.controller = controller
 
+        # Load the configuration file
+        with open('config/config.yaml', 'r') as file:
+            self.config = yaml.safe_load(file)
+
         # Layout for the video panel
         self.layout = QVBoxLayout(self)
+        self.__timer = None
 
         # Setup attribute variables and layouts.
         self.__opengl_widget = OpenGLVideoWidget(self)
@@ -60,12 +69,15 @@ class VideoPanel(QWidget):
         self.layout.addWidget(self.__opengl_widget, stretch=7)
         self.layout.addLayout(self.__control_layout, stretch=3)
 
-        self.__timer = QTimer(self)
-        self.__timer.timeout.connect(self.update_frame)
-
         self.__video_stream = None
         self.__is_playing = False
         self.__fps = 30  # Default FPS
+
+        model_path = self.config['model']['yolov8s']
+        verbose = self.config['logging']['detection_verbose']
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f'Using device: {self.device}')
+        self.model = YOLO(model_path, verbose=verbose).to(self.device)
 
     def set_video_stream(self, video_stream: VideoStream):
         """Set the video stream."""
@@ -73,8 +85,10 @@ class VideoPanel(QWidget):
         self.__fps = self.__video_stream.get_fps()
         self.__timeline_slider.setRange(0, 1)
         self.__timeline_slider.setVisible(True)
+        self.__timer = QTimer(self)
+        self.__timer.timeout.connect(self.update_frame)
+        self.__timer.start(int(1000/self.__fps))
         #self.__video_duration_label.setText(format_time(self.__video_stream.frame_count / self.__fps))
-        self.__play_video()
 
     def get_video_stream(self):
         """Get the video stream."""
@@ -120,15 +134,22 @@ class VideoPanel(QWidget):
             self.update_frame()
 
     def update_frame(self):
-        """Update the OpenGL widget with the current frame."""
-        if self.__video_stream:
-            frame = self.__video_stream.get_frame()
-
-            #self.__opengl_widget.update_frame(frame)
-            if False: # TODO turn on if a video, off if not.
-                current_position = int(self.__video_stream.get_frame_position() * 100 / self.__video_stream.frame_count)
-                self.__timeline_slider.setValue(current_position)
-                self.__current_duration_label.setText(format_time(self.__video_stream.get_frame_position() / self.__fps))
+        result = self.__video_stream.get_frame()
+        if result:
+            ret, frame = result
+        else:
+            ret = False
+        if ret:
+            frame_gpu = cp.asnumpy(frame)  # Transfer frame to GPU
+            results = self.model(frame_gpu, verbose=False)  # Run detection on CPU
+            bounding_boxes = []
+            for result in results:
+                boxes = result.boxes
+                for box in boxes:
+                    bbox = cp.asnumpy(box.xyxy[0]).tolist()  # Transfer bounding box back to CPU
+                    bounding_boxes.append(bbox)
+            self.__opengl_widget    .upload_frame_to_opengl(cp.asnumpy(frame_gpu),
+                                                     bounding_boxes)  # Transfer frame back to CPU for rendering
 
     def load_video_file(self, file_path):
         """Load a video file."""
