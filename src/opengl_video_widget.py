@@ -1,4 +1,3 @@
-import numpy as np
 import cupy as cp
 import cv2
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget

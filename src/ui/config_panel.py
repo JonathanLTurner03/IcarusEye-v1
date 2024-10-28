@@ -1,10 +1,8 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGroupBox, QLabel, QSlider, QPushButton, QCheckBox, QRadioButton,
-                             QComboBox, QFileDialog, QSpacerItem, QSizePolicy, QHBoxLayout, QLineEdit)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+                             QComboBox, QFileDialog, QHBoxLayout, QLineEdit)
+from PyQt6.QtCore import Qt, QThread
 from PyQt6.QtGui import QIntValidator
 from src.threads import DeviceScanner
-import logging
-import cv2
 
 
 class ConfigPanel(QWidget):

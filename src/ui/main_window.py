@@ -1,17 +1,8 @@
-import time
-from os.path import split
-
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QScrollArea
-from torchvision.tv_tensors import Video
-
 from src.ui.config_panel import ConfigPanel
 from src.ui.video_panel import VideoPanel
-import cv2
-import os
-import sys
-import yaml
-
 from src.video_stream import VideoStream
+import yaml
 
 
 class MainWindow(QMainWindow):

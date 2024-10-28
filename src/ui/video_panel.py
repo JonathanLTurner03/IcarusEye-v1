@@ -1,14 +1,12 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLayout, QLabel,
                              QSizePolicy, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPalette, QColor
+from ultralytics import YOLO
 from src.video_stream import VideoStream
 from src.opengl_video_widget import OpenGLVideoWidget
-import cv2
 import cupy as cp
-import yaml
 import torch
-from ultralytics import YOLO
+import yaml
 
 
 def format_time(seconds):
