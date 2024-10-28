@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLayout, QLabel,
                              QSizePolicy, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPalette, QColor
 from src.video_stream import VideoStream
 from src.opengl_video_widget import OpenGLVideoWidget
 import cv2
@@ -34,6 +35,10 @@ class VideoPanel(QWidget):
         self.__opengl_widget = OpenGLVideoWidget(self)
         self.__opengl_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
+        self.__opengl_container = QWidget(self)
+        self.__opengl_container.setLayout(QVBoxLayout())
+        self.__opengl_container.layout().addWidget(self.__opengl_widget)
+
         self.__control_layout = QVBoxLayout()
 
         self.__control_buttons_layout = QHBoxLayout()
@@ -66,7 +71,7 @@ class VideoPanel(QWidget):
         self.__timeline_layout.addLayout(time_layout)
 
         # Add widgets to the main layout with stretch factors
-        self.layout.addWidget(self.__opengl_widget, stretch=7)
+        self.layout.addWidget(self.__opengl_container, stretch=7)
         self.layout.addLayout(self.__control_layout, stretch=3)
 
         self.__video_stream = None

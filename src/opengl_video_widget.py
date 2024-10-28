@@ -19,16 +19,35 @@ class OpenGLVideoWidget(QOpenGLWidget):
         gl.glEnable(gl.GL_TEXTURE_2D)
         self.init_pbo()
 
+    def resizeEvent(self, event):
+        # Get the new size of the widget
+        window_width = self.parent().width()
+        window_height = self.parent().height()
+
+        # Calculate the aspect ratio
+        aspect_ratio = 16 / 9
+
+        # Calculate the new dimensions while maintaining the aspect ratio
+        if window_width / window_height > aspect_ratio:
+            new_width = int(window_height * aspect_ratio)
+            new_height = window_height
+        else:
+            new_width = window_width
+            new_height = int(window_width / aspect_ratio)
+
+        # Center the widget
+        x_offset = (window_width - new_width) // 2
+        y_offset = (window_height - new_height) // 2
+
+        # Resize and reposition the widget
+        self.setGeometry(x_offset, y_offset, new_width, new_height)
+        super(OpenGLVideoWidget, self).resizeEvent(event)
+
     def init_pbo(self):
         self.pbo_id = gl.glGenBuffers(1)
         gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, self.pbo_id)
         gl.glBufferData(gl.GL_PIXEL_UNPACK_BUFFER, 1920 * 1080 * 4, None, gl.GL_STREAM_DRAW)
         gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
-
-    def resizeGL(self, width, height):
-        video_width = 800
-        video_height = int(video_width * 9 / 16)
-        gl.glViewport(0, 0, video_width, video_height)
 
     def paintGL(self):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
