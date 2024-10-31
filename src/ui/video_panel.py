@@ -1,3 +1,4 @@
+import numpy as np
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLayout, QLabel,
                              QSizePolicy, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer
@@ -147,13 +148,15 @@ class VideoPanel(QWidget):
             frame_gpu = cp.asnumpy(frame)  # Transfer frame to GPU
             results = self.model(frame_gpu, verbose=False)  # Run detection on CPU
             bounding_boxes = []
+            confidences = []
             for result in results:
                 boxes = result.boxes
                 for box in boxes:
                     bbox = cp.asnumpy(box.xyxy[0]).tolist()  # Transfer bounding box back to CPU
+                    confidences.append(box.conf)
                     bounding_boxes.append(bbox)
-            self.__opengl_widget    .upload_frame_to_opengl(cp.asnumpy(frame_gpu),
-                                                     bounding_boxes)  # Transfer frame back to CPU for rendering
+            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame_gpu),
+                                                     bounding_boxes, confidences)  # Transfer frame back to CPU for rendering
 
     def load_video_file(self, file_path):
         """Load a video file."""

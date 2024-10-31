@@ -10,6 +10,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
         self.pbo_id = None
         self.image = None
         self.bounding_boxes = []
+        self.confidences = []
 
     def initializeGL(self):
         gl.glEnable(gl.GL_BLEND)
@@ -54,9 +55,10 @@ class OpenGLVideoWidget(QOpenGLWidget):
             self.draw_texture()
         self.draw_bounding_boxes()
 
-    def upload_frame_to_opengl(self, frame, bounding_boxes):
+    def upload_frame_to_opengl(self, frame, bounding_boxes, confidences):
         self.image = frame
         self.bounding_boxes = bounding_boxes
+        self.confidences = confidences
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Correct color conversion
         frame_rgb = cp.flipud(cp.array(frame_rgb))  # Flip vertically to correct the upside-down issue
         frame_rgb_np = cp.asnumpy(frame_rgb)  # Convert CuPy array to NumPy array
@@ -90,7 +92,9 @@ class OpenGLVideoWidget(QOpenGLWidget):
     def draw_bounding_boxes(self):
         gl.glColor3f(1, 0, 0)  # Set color to red
         gl.glLineWidth(2)  # Set line width
-        for bbox in self.bounding_boxes:
+        for i in range(len(self.bounding_boxes)):
+            bbox = self.bounding_boxes[i]
+            confidence = self.confidences[i]
             x1 = (bbox[0] / self.image.shape[1]) * 2 - 1
             y1 = 1 - (bbox[1] / self.image.shape[0]) * 2
             x2 = (bbox[2] / self.image.shape[1]) * 2 - 1
