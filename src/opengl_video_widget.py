@@ -15,7 +15,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
         self.confidences = []
 
         # Initialize FreeType and load font
-        self.face = freetype.Face("resources/consolas.ttf")  # Replace with your font path
+        self.face = freetype.Face("resources/fonts/consolas.ttf")  # Replace with your font path
         self.face.set_char_size(34 * 64)  # Adjust font size if necessary
 
     def initializeGL(self):
@@ -108,7 +108,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
             gl.glEnd()
 
             # Render and draw the confidence score text
-            text = f"{confidence.item():.2f}"
+            text = f"{confidence:.2f}"
             text_texture_id, text_width, text_height = self.render_text_to_texture(text)
 
             # Calculate text position based on bounding box

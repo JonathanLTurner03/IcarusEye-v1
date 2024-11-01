@@ -83,6 +83,9 @@ class VideoPanel(QWidget):
         print(f'Using device: {self.device}')
         self.model = YOLO(model_path, verbose=verbose).to(self.device)
 
+        self.__confidence_threshold = 0
+        self.__max_boxes = 5
+
     def set_video_stream(self, video_stream: VideoStream):
         """Set the video stream."""
         self.__video_stream = video_stream
@@ -147,14 +150,35 @@ class VideoPanel(QWidget):
         if ret:
             frame_gpu = cp.asnumpy(frame)  # Transfer frame to GPU
             results = self.model(frame_gpu, verbose=False)  # Run detection on CPU
+
+            bblist = []
+            conflist = []
+
             bounding_boxes = []
             confidences = []
+
             for result in results:
-                boxes = result.boxes
-                for box in boxes:
-                    bbox = cp.asnumpy(box.xyxy[0]).tolist()  # Transfer bounding box back to CPU
-                    confidences.append(box.conf)
-                    bounding_boxes.append(bbox)
+                for box in result.boxes:
+                    conf = box.conf.item()
+                    if conf >= self.__confidence_threshold:
+                        bblist.append(cp.asarray(box.xyxy[0]))
+                        conflist.append(conf)
+
+            if len(bblist) > 0:
+                boxes_array = cp.stack(bblist)
+                conf_array = cp.array(conflist)
+
+                sorted_indicies = cp.argsort(-conf_array)
+                boxes_array = boxes_array[sorted_indicies]
+                conf_array = conf_array[sorted_indicies]
+
+                boxes_array = boxes_array[:self.__max_boxes]
+                conf_array = conf_array[:self.__max_boxes]
+
+                bounding_boxes = cp.asnumpy(boxes_array).tolist()
+                confidences = cp.asnumpy(conf_array).tolist()
+
+
             self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame_gpu),
                                                      bounding_boxes, confidences)  # Transfer frame back to CPU for rendering
 
