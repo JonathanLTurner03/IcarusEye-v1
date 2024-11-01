@@ -56,8 +56,6 @@ class MainWindow(QMainWindow):
         """Set the confidence threshold value."""
         self.video_panel.update_confidence_threshold(value / 100)
 
-    # UI Value Setters and Getters #
-
     # Sets the resolution multiplier
     def set_video_file(self, file_path):
         """Set the video file path."""
@@ -87,6 +85,7 @@ class MainWindow(QMainWindow):
 
     def set_nth_frame(self, value):
         """Set the nth frame value."""
+        self.video_panel.update_nth_frame(value)
         self.__nth_frame = value
         print(f"Nth frame: {value}")
 

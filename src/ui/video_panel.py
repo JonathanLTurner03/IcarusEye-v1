@@ -85,6 +85,10 @@ class VideoPanel(QWidget):
 
         self.__confidence_threshold = 0
         self.__max_boxes = 5
+        self.__frame_counter = 0
+        self.__nth_frame = 1
+        self.__bounding_boxes = []
+        self.__confidences = []
 
     def set_video_stream(self, video_stream: VideoStream):
         """Set the video stream."""
@@ -145,8 +149,14 @@ class VideoPanel(QWidget):
         result = self.__video_stream.get_frame()
         if result:
             ret, frame = result
+            self.__frame_counter += 1
         else:
             ret = False
+
+        if self.__frame_counter % self.__nth_frame != 0:
+            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame), self.__bounding_boxes, self.__confidences)
+            return
+
         if ret:
             frame_gpu = cp.asnumpy(frame)
             results = self.model(frame_gpu, verbose=False)
@@ -179,7 +189,9 @@ class VideoPanel(QWidget):
                 confidences = cp.asnumpy(conf_array).tolist()
 
 
-            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame_gpu), bounding_boxes, confidences)
+            self.__bounding_boxes = bounding_boxes
+            self.__confidences = confidences
+            self.__opengl_widget.upload_frame_to_opengl(frame_gpu, bounding_boxes, confidences)
 
     def load_video_file(self, file_path):
         """Load a video file."""
@@ -197,3 +209,7 @@ class VideoPanel(QWidget):
     def update_max_boxes(self, value):
         """Update the maximum number of boxes."""
         self.__max_boxes = value
+
+    def update_nth_frame(self, value):
+        """Update the nth frame."""
+        self.__nth_frame = value
