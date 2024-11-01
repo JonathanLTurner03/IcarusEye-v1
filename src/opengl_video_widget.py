@@ -13,6 +13,7 @@ class OpenGLVideoWidget(QOpenGLWidget):
         self.image = None
         self.bounding_boxes = []
         self.confidences = []
+        self.classes = []
 
         # Initialize FreeType and load font
         self.face = freetype.Face("resources/fonts/consolas.ttf")  # Replace with your font path
@@ -55,10 +56,11 @@ class OpenGLVideoWidget(QOpenGLWidget):
             self.draw_texture()
         self.draw_bounding_boxes()
 
-    def upload_frame_to_opengl(self, frame, bounding_boxes, confidences):
+    def upload_frame_to_opengl(self, frame, bounding_boxes, confidences, classes):
         self.image = frame
         self.bounding_boxes = bounding_boxes
         self.confidences = confidences
+        self.classes = classes
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_rgb = cp.flipud(cp.array(frame_rgb))
         frame_rgb_np = cp.asnumpy(frame_rgb)
@@ -66,14 +68,16 @@ class OpenGLVideoWidget(QOpenGLWidget):
         if self.texture_id is None:
             self.texture_id = gl.glGenTextures(1)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
-            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, frame_rgb_np.shape[1], frame_rgb_np.shape[0], 0, gl.GL_RGB, gl.GL_UNSIGNED_BYTE, frame_rgb_np)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, frame_rgb_np.shape[1], frame_rgb_np.shape[0], 0, gl.GL_RGB,
+                            gl.GL_UNSIGNED_BYTE, frame_rgb_np)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
         else:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
-            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, frame_rgb_np.shape[1], frame_rgb_np.shape[0], gl.GL_RGB, gl.GL_UNSIGNED_BYTE, frame_rgb_np)
+            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, frame_rgb_np.shape[1], frame_rgb_np.shape[0], gl.GL_RGB,
+                               gl.GL_UNSIGNED_BYTE, frame_rgb_np)
 
         gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
         self.update()
@@ -81,19 +85,24 @@ class OpenGLVideoWidget(QOpenGLWidget):
     def draw_texture(self):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_id)
         gl.glBegin(gl.GL_QUADS)
-        gl.glTexCoord2f(0, 0); gl.glVertex3f(-1, -1, 0)
-        gl.glTexCoord2f(1, 0); gl.glVertex3f(1, -1, 0)
-        gl.glTexCoord2f(1, 1); gl.glVertex3f(1, 1, 0)
-        gl.glTexCoord2f(0, 1); gl.glVertex3f(-1, 1, 0)
+        gl.glTexCoord2f(0, 0);
+        gl.glVertex3f(-1, -1, 0)
+        gl.glTexCoord2f(1, 0);
+        gl.glVertex3f(1, -1, 0)
+        gl.glTexCoord2f(1, 1);
+        gl.glVertex3f(1, 1, 0)
+        gl.glTexCoord2f(0, 1);
+        gl.glVertex3f(-1, 1, 0)
         gl.glEnd()
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
     def draw_bounding_boxes(self):
-        gl.glColor3f(1, 0, 0)
         gl.glLineWidth(2)
         for i in range(len(self.bounding_boxes)):
+            gl.glColor3f(*self.classes[i])  # Set color based on class
             bbox = self.bounding_boxes[i]
             confidence = self.confidences[i]
+            cls = self.classes[i]
             x1 = (bbox[0] / self.image.shape[1]) * 2 - 1
             y1 = 1 - (bbox[1] / self.image.shape[0]) * 2
             x2 = (bbox[2] / self.image.shape[1]) * 2 - 1
@@ -176,4 +185,3 @@ class OpenGLVideoWidget(QOpenGLWidget):
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
 
         return texture_id, total_width, max_height
-

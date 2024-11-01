@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QTimer
 from ultralytics import YOLO
 from src.video_stream import VideoStream
 from src.opengl_video_widget import OpenGLVideoWidget
+import OpenGL.GL as gl
 import cupy as cp
 import torch
 import yaml
@@ -89,6 +90,22 @@ class VideoPanel(QWidget):
         self.__nth_frame = 1
         self.__bounding_boxes = []
         self.__confidences = []
+        self.__classes = []
+        self.__min_box_size = 15
+        self.__class_colormap = \
+            {
+                0: [0, 1, 1],
+                1: [0, 1, 1],
+                2: [0, 1, 0],
+                3: [1, 0, 0],
+                4: [1, 0, 0],
+                5: [1, 0, 0],
+                6: [0, 1, 0],
+                7: [0, 1, 0],
+                8: [1, 1, 0],
+                9: [1, 1, 1]
+            }
+        print(self.model.names)
 
     def set_video_stream(self, video_stream: VideoStream):
         """Set the video stream."""
@@ -151,10 +168,11 @@ class VideoPanel(QWidget):
             ret, frame = result
             self.__frame_counter += 1
         else:
-            ret = False
+            return
 
         if self.__frame_counter % self.__nth_frame != 0:
-            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame), self.__bounding_boxes, self.__confidences)
+            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame), self.__bounding_boxes, self.__confidences,
+                                                        self.__classes)
             return
 
         if ret:
@@ -163,35 +181,49 @@ class VideoPanel(QWidget):
 
             bblist = []
             conflist = []
+            clslist = []
 
             bounding_boxes = []
             confidences = []
+            classes = []
 
             for result in results:
                 for box in result.boxes:
                     conf = box.conf.item()
                     if conf >= self.__confidence_threshold:
-                        bblist.append(cp.asarray(box.xyxy[0]))
-                        conflist.append(conf)
+                        bbox = cp.asarray(box.xyxy[0])
+                        width = bbox[2] - bbox[0]
+                        height = bbox[3] - bbox[1]
+
+                        # Filter based on bounding box size
+                        if width >= self.__min_box_size and height >= self.__min_box_size:
+                            bblist.append(bbox)
+                            conflist.append(conf)
+                            clslist.append(self.__class_colormap[int(box.cls.item())])
 
             if len(bblist) > 0:
                 boxes_array = cp.stack(bblist)
                 conf_array = cp.array(conflist)
+                cls_array = cp.array(clslist)
 
                 sorted_indicies = cp.argsort(-conf_array)
                 boxes_array = boxes_array[sorted_indicies]
                 conf_array = conf_array[sorted_indicies]
+                cls_array = cls_array[sorted_indicies]
 
                 boxes_array = boxes_array[:self.__max_boxes]
                 conf_array = conf_array[:self.__max_boxes]
+                cls_array = cls_array[:self.__max_boxes]
 
                 bounding_boxes = cp.asnumpy(boxes_array).tolist()
                 confidences = cp.asnumpy(conf_array).tolist()
+                classes = cp.asnumpy(cls_array).tolist()
 
 
             self.__bounding_boxes = bounding_boxes
             self.__confidences = confidences
-            self.__opengl_widget.upload_frame_to_opengl(frame_gpu, bounding_boxes, confidences)
+            self.__classes = classes
+            self.__opengl_widget.upload_frame_to_opengl(frame_gpu, bounding_boxes, confidences, classes)
 
     def load_video_file(self, file_path):
         """Load a video file."""
