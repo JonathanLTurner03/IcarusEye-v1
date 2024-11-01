@@ -94,16 +94,16 @@ class VideoPanel(QWidget):
         self.__min_box_size = 15
         self.__class_colormap = \
             {
-                0: [0, 1, 1],
-                1: [0, 1, 1],
-                2: [0, 1, 0],
+                0: [1, 0, 0],
+                1: [1, 0, 0],
+                2: [1, 0, 0],
                 3: [1, 0, 0],
                 4: [1, 0, 0],
                 5: [1, 0, 0],
-                6: [0, 1, 0],
-                7: [0, 1, 0],
-                8: [1, 1, 0],
-                9: [1, 1, 1]
+                6: [1, 0, 0],
+                7: [1, 0, 0],
+                8: [1, 0, 0],
+                9: [1, 0, 0]
             }
         print(self.model.names)
 
@@ -245,3 +245,34 @@ class VideoPanel(QWidget):
     def update_nth_frame(self, value):
         """Update the nth frame."""
         self.__nth_frame = value
+
+    def update_colormap(self, value):
+        """Update the colormap."""
+        if value:
+            self.__class_colormap = \
+                {
+                    0: [0, 1, 1],
+                    1: [0, 1, 1],
+                    2: [0, 1, 0],
+                    3: [1, 0, 0],
+                    4: [1, 0, 0],
+                    5: [1, 0, 0],
+                    6: [0, 1, 0],
+                    7: [0, 1, 0],
+                    8: [1, 1, 0],
+                    9: [1, 1, 1]
+                }
+        else:
+            self.__class_colormap = \
+                {
+                    0: [1, 0, 0],
+                    1: [1, 0, 0],
+                    2: [1, 0, 0],
+                    3: [1, 0, 0],
+                    4: [1, 0, 0],
+                    5: [1, 0, 0],
+                    6: [1, 0, 0],
+                    7: [1, 0, 0],
+                    8: [1, 0, 0],
+                    9: [1, 0, 0]
+                }
