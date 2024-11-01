@@ -148,8 +148,8 @@ class VideoPanel(QWidget):
         else:
             ret = False
         if ret:
-            frame_gpu = cp.asnumpy(frame)  # Transfer frame to GPU
-            results = self.model(frame_gpu, verbose=False)  # Run detection on CPU
+            frame_gpu = cp.asnumpy(frame)
+            results = self.model(frame_gpu, verbose=False)
 
             bblist = []
             conflist = []
@@ -179,8 +179,7 @@ class VideoPanel(QWidget):
                 confidences = cp.asnumpy(conf_array).tolist()
 
 
-            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame_gpu),
-                                                     bounding_boxes, confidences)  # Transfer frame back to CPU for rendering
+            self.__opengl_widget.upload_frame_to_opengl(cp.asnumpy(frame_gpu), bounding_boxes, confidences)
 
     def load_video_file(self, file_path):
         """Load a video file."""
@@ -190,3 +189,11 @@ class VideoPanel(QWidget):
         self.__timeline_slider.setVisible(True)
         self.__video_duration_label.setText(format_time(1))
         self.__play_video()
+
+    def update_confidence_threshold(self, value):
+        """Update the confidence threshold."""
+        self.__confidence_threshold = value
+
+    def update_max_boxes(self, value):
+        """Update the maximum number of boxes."""
+        self.__max_boxes = value

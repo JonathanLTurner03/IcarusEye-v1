@@ -54,8 +54,7 @@ class MainWindow(QMainWindow):
 
     def set_confidence(self, value):
         """Set the confidence threshold value."""
-        # TODO: Implement the update to the detection worker
-        self.confidence = value
+        self.video_panel.update_confidence_threshold(value / 100)
 
     # UI Value Setters and Getters #
 
@@ -94,7 +93,7 @@ class MainWindow(QMainWindow):
     def set_bounding_box_max(self, value):
         """Set the bounding box max value."""
         self.__bbox_max = value
-        print(f"Bounding box max: {value}")
+        self.video_panel.update_max_boxes(value)
 
     def set_video_device(self, device):
         """Set the video device."""
