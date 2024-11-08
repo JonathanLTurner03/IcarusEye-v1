@@ -4,6 +4,9 @@ from src.ui.main_window import MainWindow
 from src.ui.loading_screen import LoadingScreen
 import time
 
+import cProfile
+import pstats
+
 
 def main():
     app = QApplication(sys.argv)
@@ -23,8 +26,16 @@ def main():
     loading_screen.close()
     main_window.show()
 
-    sys.exit(app.exec())
+    app.exec()
 
 
 if __name__ == "__main__":
+    profiler = cProfile.Profile()
+    profiler.enable()
     main()
+    profiler.disable()
+    profiler.dump_stats('profile_data.prof')
+
+    stats = pstats.Stats('profile_data.prof')
+    stats.sort_stats('cumulative').print_stats()
+

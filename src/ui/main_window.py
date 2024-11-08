@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
     def set_multi_color_classes(self, value):
         """Set the multi-color classes value."""
         self.video_panel.update_colormap(True if value == 2 else False)
-        print(f"Multi-color classes: {value}")
+        print(f"Multi-color classes:  {value}")
 
     def update_omitted_classes(self, classes):
         """Update the omitted classes."""

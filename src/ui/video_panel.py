@@ -84,7 +84,7 @@ class VideoPanel(QWidget):
         print(f'Using device: {self.device}')
         self.model = YOLO(model_path, verbose=verbose).to(self.device)
 
-        self.__confidence_threshold = 0
+        self.__confidence_threshold = 50
         self.__max_boxes = 5
         self.__frame_counter = 0
         self.__nth_frame = 1

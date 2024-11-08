@@ -3,6 +3,7 @@ import cv2
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
 import OpenGL.GL as gl
 import freetype
+import time
 
 
 class OpenGLVideoWidget(QOpenGLWidget):
@@ -14,6 +15,10 @@ class OpenGLVideoWidget(QOpenGLWidget):
         self.bounding_boxes = []
         self.confidences = []
         self.classes = []
+
+        # Initialize FPS measurement variables
+        self.last_frame_time = time.time()
+        self.actual_fps = 0
 
         # Initialize FreeType and load font
         self.face = freetype.Face("resources/fonts/consolas.ttf")  # Replace with your font path
@@ -51,10 +56,23 @@ class OpenGLVideoWidget(QOpenGLWidget):
         gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
 
     def paintGL(self):
+
+        # Calculate the time elapsed since the last frame
+        current_time = time.time()
+        time_elapsed = current_time - self.last_frame_time
+        self.last_frame_time = current_time
+
+        # Update actual FPS if time elapsed is not zero
+        if time_elapsed > 0:
+            self.actual_fps = 1.0 / time_elapsed
+
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         if self.texture_id is not None:
             self.draw_texture()
         self.draw_bounding_boxes()
+
+        # Print the FPS to the console (or use for debugging)
+        print(f"Actual Render FPS: {self.actual_fps:.2f}")
 
     def upload_frame_to_opengl(self, frame, bounding_boxes, confidences, classes):
         self.image = frame
@@ -102,18 +120,38 @@ class OpenGLVideoWidget(QOpenGLWidget):
             gl.glColor3f(*self.classes[i])  # Set color based on class
             bbox = self.bounding_boxes[i]
             confidence = self.confidences[i]
-            cls = self.classes[i]
             x1 = (bbox[0] / self.image.shape[1]) * 2 - 1
             y1 = 1 - (bbox[1] / self.image.shape[0]) * 2
             x2 = (bbox[2] / self.image.shape[1]) * 2 - 1
             y2 = 1 - (bbox[3] / self.image.shape[0]) * 2
 
-            # Draw the bounding box
-            gl.glBegin(gl.GL_LINE_LOOP)
+            # Calculate border lengths
+            border_length_x = (x2 - x1) / 4
+            border_length_y = (y2 - y1) / 4
+
+            gl.glColor3f(*self.classes[i])  # Set color based on class
+            # Draw the border lines
+            gl.glBegin(gl.GL_LINES)
+            # Top border
             gl.glVertex2f(x1, y1)
+            gl.glVertex2f(x1 + border_length_x, y1)
+            gl.glVertex2f(x2 - border_length_x, y1)
             gl.glVertex2f(x2, y1)
-            gl.glVertex2f(x2, y2)
+            # Bottom border
             gl.glVertex2f(x1, y2)
+            gl.glVertex2f(x1 + border_length_x, y2)
+            gl.glVertex2f(x2 - border_length_x, y2)
+            gl.glVertex2f(x2, y2)
+            # Left border
+            gl.glVertex2f(x1, y1)
+            gl.glVertex2f(x1, y1 + border_length_y)
+            gl.glVertex2f(x1, y2 - border_length_y)
+            gl.glVertex2f(x1, y2)
+            # Right border
+            gl.glVertex2f(x2, y1)
+            gl.glVertex2f(x2, y1 + border_length_y)
+            gl.glVertex2f(x2, y2 - border_length_y)
+            gl.glVertex2f(x2, y2)
             gl.glEnd()
 
             # Render and draw the confidence score text

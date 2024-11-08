@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # TODO add documentation and comments
 class VideoStream:
-    def __init__(self, source, type, width=1920, fps=60, height=1080, backend=cv2.CAP_DSHOW):
+    def __init__(self, source, type, width=1280, fps=30, height=720, backend=cv2.CAP_MSMF):
         self.cap = None
         self.source = source
 
@@ -33,6 +33,12 @@ class VideoStream:
         else:
             print("Camera opened successfully with DirectShow.")
 
+        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        if not cap.set(cv2.CAP_PROP_FOURCC, fourcc):
+            print("Failed to set MJPEG codec.")
+        else:
+            print("MJPEG codec set successfully.")
+
         # Set the resolution (1080p)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
@@ -41,13 +47,7 @@ class VideoStream:
         cap.set(cv2.CAP_PROP_FPS, self.fps)  # Adjust as needed
 
         # Set the camera to use the MJPEG codec (FOURCC for MJPG)
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        if not cap.set(cv2.CAP_PROP_FOURCC, fourcc):
-            print("Failed to set MJPEG codec.")
-            self.cap = None
-        else:
-            print("MJPEG codec set successfully.")
-            self.cap = cap
+        self.cap = cap
 
 
     def _setup_recording(self):
