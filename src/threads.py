@@ -6,7 +6,7 @@ import re
 import torch
 from ultralytics import YOLO
 import time
-from threading import Thread
+from threading import Thread, Lock
 
 
 def is_ffmpeg_installed():
@@ -78,48 +78,63 @@ class RenderProcessor(QThread):
         self.fps_target = fps_target
         self.frame_duration = 1.0 / fps_target
         self.running = True
+        self.alive = True
 
     def run(self):
-        while self.running:
-            start_time = time.time()
-            try:
-                # Retrieve a frame and detection results
-                frame, results = self.result_queue.get(timeout=1)
-            except:
-                continue
+        while self.alive:
+            while self.running:
+                start_time = time.time()
+                try:
+                    # Retrieve a frame and detection results
+                    frame, results = self.result_queue.get(timeout=1)
+                except:
+                    continue
 
-            # Draw bounding boxes and predictions on the frame
-            for result in results:
-                for box in result.boxes:
-                    x1, y1, x2, y2 = map(int, box.xyxy[0])
-                    conf = box.conf.item()
-                    cls = int(box.cls.item())
-                    label = f"{self.model_names[cls]}: {conf:.2f}"
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                # Draw bounding boxes and predictions on the frame
+                try:
+                    for result in results:
+                        for box in result.boxes:
+                            x1, y1, x2, y2 = map(int, box.xyxy[0])
+                            conf = box.conf.item()
+                            cls = int(box.cls.item())
+                            label = f"{self.model_names[cls]}: {conf:.2f}"
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-            # Convert frame to QImage and emit it
-            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = rgb_image.shape
-            bytes_per_line = ch * w
-            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-            self.frame_updated.emit(qt_image)
+                    # Convert frame to QImage and emit it
+                    rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    h, w, ch = rgb_image.shape
+                    bytes_per_line = ch * w
+                    qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+                    self.frame_updated.emit(qt_image)
+                except Exception as e:
+                    print(f"Error updating frame: {e}")
 
-            # Control frame rate
-            elapsed_time = time.time() - start_time
-            if elapsed_time < self.frame_duration:
-                time.sleep(self.frame_duration - elapsed_time)
+                # Control frame rate
+                elapsed_time = time.time() - start_time
+                if elapsed_time < self.frame_duration:
+                    time.sleep(self.frame_duration - elapsed_time)
 
     def stop(self):
         self.running = False
-        self.wait()
+
+    def resume(self):
+        self.running = True
+        print('resumed')
+
+    def terminate(self):
+        self.stop()
+        self.alive = False
+        print('terminating')
+
 
 class DetectionProcessor(Thread):
     def __init__(self, video_path, model_path, result_queue, batch_size=4):
         super().__init__()
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
-        self.running = True
+        self.running = False
+        self.alive = True
         self.result_queue = result_queue
         self.batch_size = batch_size
 
@@ -128,29 +143,63 @@ class DetectionProcessor(Thread):
         self.model = YOLO(model_path).to(self.device)
 
     def run(self):
-        frames = []
-        while self.cap.isOpened() and self.running:
-            ret, frame = self.cap.read()
-            if not ret:
-                break
+        while self.alive:
+            frames = []
+            print('running')
+            while self.running and self.cap.isOpened():
+                if not self.running:
+                    print(f'breaking 1')
+                    break  # Exit immediately if running is set to False
 
-            frames.append(frame)
-            if len(frames) == self.batch_size:
-                # Perform object detection on the batch
-                results = self.model(frames)
+                ret, frame = self.cap.read()
+                if not ret or not self.running:
+                    print(f'breaking')
+                    break  # Exit if reading fails or running is set to False
 
-                # Put the results in the result queue
-                for frame, result in zip(frames, results):
-                    self.result_queue.put((frame, result))
+                frames.append(frame)
+                print(f'frames: {len(frames)}')
+                if len(frames) == self.batch_size:
+                    try:
+                        results = self.model(frames)
+                        for frame, result in zip(frames, results):
+                            if not self.running:
+                                break  # Stop processing if running is set to False
+                            self.result_queue.put((frame, result))
 
-                frames = []
+                        frames = []
+                    except Exception as e:
+                        print(f"Error during detection: {e}")
 
-        # Process remaining frames if any
-        if frames:
-            results = self.model(frames)
-            for frame, result in zip(frames, results):
-                self.result_queue.put((frame, result))
+            print('loop exited')
+            # Cleanup if there are remaining frames and the thread is still running
+            if frames:
+                try:
+                    print('processing remaining frames')
+                    results = self.model(frames)
+                    for frame, result in zip(frames, results):
+                        if not self.running:
+                            break
+                        self.result_queue.put((frame, result))
+                except Exception as e:
+                    print(f"Error during final batch processing: {e}")
+
+            print(f'processed frames.')
+
+        print('thread exited')
+
+    def is_stopped(self):
+        print(f'running: {self.running}')
+        return not self.running
 
     def stop(self):
         self.running = False
-        self.cap.release()
+        print('stopped')
+
+    def resume(self):
+        self.running = True
+        print('resumed')
+
+    def terminate(self):
+        self.stop()
+        self.alive = False
+        print('terminating')

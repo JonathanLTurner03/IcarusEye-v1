@@ -30,12 +30,4 @@ def main():
 
 
 if __name__ == "__main__":
-    profiler = cProfile.Profile()
-    profiler.enable()
     main()
-    profiler.disable()
-    profiler.dump_stats('profile_data.prof')
-
-    stats = pstats.Stats('profile_data.prof')
-    stats.sort_stats('cumulative').print_stats()
-
