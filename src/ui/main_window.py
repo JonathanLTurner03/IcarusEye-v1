@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the ConfigPanel to the layout
         self.config_panel = ConfigPanel(self)
-        self.video_panel = VideoPanel(self)
+        self.video_panel = VideoPanel("goggles_test.mp4", "models/yolov8s.pt")
 
         # Set default values in config.
         self.config_panel.set_fps(1)
