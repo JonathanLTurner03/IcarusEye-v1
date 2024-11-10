@@ -1,3 +1,4 @@
+import numpy as np
 from PyQt6.QtCore import pyqtSignal, QObject, QThread
 from PyQt6.QtGui import QImage
 import subprocess
@@ -69,7 +70,8 @@ class DeviceScanner(QObject):
 
 
 class RenderProcessor(QThread):
-    frame_updated = pyqtSignal(QImage)  # Signal to emit frames to the GUI
+    frame_updated = pyqtSignal(np.ndarray)  # Signal to emit frames to the GUI
+    fps_updated = pyqtSignal(float)  # Signal to emit the FPS to the GUI
 
     def __init__(self, result_queue, model_names, fps_target=60):
         super().__init__()
@@ -79,16 +81,21 @@ class RenderProcessor(QThread):
         self.frame_duration = 1.0 / fps_target
         self.running = True
         self.alive = True
+        self.frame_times = []
+        self.conf_thres = 0.5
+        self.toggle_color_map(False)
 
     def run(self):
         while self.alive:
             while self.running:
                 start_time = time.time()
+
+                # Retrieve a frame and detection results
                 try:
-                    # Retrieve a frame and detection results
                     frame, results = self.result_queue.get(timeout=1)
                 except:
-                    continue
+                    print("No frame in queue; continuing...")
+                    continue  # Skip processing if no frame is available
 
                 # Draw bounding boxes and predictions on the frame
                 try:
@@ -98,34 +105,81 @@ class RenderProcessor(QThread):
                             conf = box.conf.item()
                             cls = int(box.cls.item())
                             label = f"{self.model_names[cls]}: {conf:.2f}"
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                            if conf > self.conf_thres:
+                                cv2.rectangle(frame, (x1, y1), (x2, y2), self.color_map[cls], 2)
+                                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                            self.color_map[cls], 2)
 
-                    # Convert frame to QImage and emit it
-                    rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    h, w, ch = rgb_image.shape
-                    bytes_per_line = ch * w
-                    qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-                    self.frame_updated.emit(qt_image)
+                    # Emit the processed frame as a numpy array
+                    self.frame_updated.emit(frame)
                 except Exception as e:
                     print(f"Error updating frame: {e}")
 
-                # Control frame rate
+                # Calculate and emit FPS
                 elapsed_time = time.time() - start_time
+                self.frame_times.append(elapsed_time)
+
+                if len(self.frame_times) > 30:
+                    self.frame_times.pop(0)
+
+                avg_frame_time = sum(self.frame_times) / len(self.frame_times)
+                current_fps = 1.0 / avg_frame_time if avg_frame_time > 0 else 0.0
+                self.fps_updated.emit(current_fps)
+
+                # Enforce frame rate limit
                 if elapsed_time < self.frame_duration:
                     time.sleep(self.frame_duration - elapsed_time)
+
+    def toggle_color_map(self, value):
+        if value:
+            self.color_map = \
+                {
+                    0: (255, 0, 0),
+                    1: (255, 0, 0),
+                    2: (0, 255, 0),
+                    3: (0, 0, 255),
+                    4: (255, 255, 0),
+                    5: (255, 0, 255),
+                    6: (0, 255, 255),
+                    7: (255, 255, 255),
+                    8: (255, 255, 255),
+                    9: (255, 255, 255),
+                }
+        else:
+            self.color_map = \
+                {
+                    0: (0, 255, 0),
+                    1: (0, 255, 0),
+                    2: (0, 255, 0),
+                    3: (0, 255, 0),
+                    4: (0, 255, 0),
+                    5: (0, 255, 0),
+                    6: (0, 255, 0),
+                    7: (0, 255, 0),
+                    8: (0, 255, 0),
+                    9: (0, 255, 0),
+                }
+
+    def update_confidence_threshold(self, value):
+        self.conf_thres = value
+
+    def update_multicolor_classes(self, value):
+        self.toggle_color_map(value)
+
+    def update_fps_target(self, fps):
+        self.fps_target = fps
+        self.frame_duration = 1.0 / fps
 
     def stop(self):
         self.running = False
 
     def resume(self):
         self.running = True
-        print('resumed')
 
     def terminate(self):
         self.stop()
         self.alive = False
-        print('terminating')
+        self.wait()
 
 
 class DetectionProcessor(Thread):
@@ -148,16 +202,13 @@ class DetectionProcessor(Thread):
             print('running')
             while self.running and self.cap.isOpened():
                 if not self.running:
-                    print(f'breaking 1')
                     break  # Exit immediately if running is set to False
 
                 ret, frame = self.cap.read()
                 if not ret or not self.running:
-                    print(f'breaking')
                     break  # Exit if reading fails or running is set to False
 
                 frames.append(frame)
-                print(f'frames: {len(frames)}')
                 if len(frames) == self.batch_size:
                     try:
                         results = self.model(frames)
@@ -174,7 +225,6 @@ class DetectionProcessor(Thread):
             # Cleanup if there are remaining frames and the thread is still running
             if frames:
                 try:
-                    print('processing remaining frames')
                     results = self.model(frames)
                     for frame, result in zip(frames, results):
                         if not self.running:
@@ -183,23 +233,16 @@ class DetectionProcessor(Thread):
                 except Exception as e:
                     print(f"Error during final batch processing: {e}")
 
-            print(f'processed frames.')
-
-        print('thread exited')
-
     def is_stopped(self):
-        print(f'running: {self.running}')
         return not self.running
 
     def stop(self):
         self.running = False
-        print('stopped')
 
     def resume(self):
         self.running = True
-        print('resumed')
 
     def terminate(self):
-        self.stop()
         self.alive = False
-        print('terminating')
+        self.cap.release()
+        self.stop()

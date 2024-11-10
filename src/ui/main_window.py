@@ -3,6 +3,7 @@ from src.ui.config_panel import ConfigPanel
 from src.ui.video_panel import VideoPanel
 from src.video_stream import VideoStream
 import yaml
+import time
 
 
 class MainWindow(QMainWindow):
@@ -36,7 +37,7 @@ class MainWindow(QMainWindow):
 
         # Create and add the ConfigPanel to the layout
         self.config_panel = ConfigPanel(self)
-        self.video_panel = VideoPanel("goggles_test.mp4", "models/yolov8s.pt")
+        self.video_panel = VideoPanel("models/yolov8s.pt")
 
         # Set default values in config.
         self.config_panel.set_fps(1)
@@ -59,10 +60,7 @@ class MainWindow(QMainWindow):
     # Sets the resolution multiplier
     def set_video_file(self, file_path):
         """Set the video file path."""
-        cap = VideoStream(file_path, 'recording')
-        self.fps = cap.get_fps()
-        self.native_fps = self.fps
-        self.video_panel.set_video_stream(cap)
+        self.video_panel.setup_videocapture(file_path)
 
     # Gets the list of available classes
     def get_available_classes(self):
@@ -77,7 +75,6 @@ class MainWindow(QMainWindow):
     def set_multi_color_classes(self, value):
         """Set the multi-color classes value."""
         self.video_panel.update_colormap(True if value == 2 else False)
-        print(f"Multi-color classes:  {value}")
 
     def update_omitted_classes(self, classes):
         """Update the omitted classes."""
@@ -87,7 +84,6 @@ class MainWindow(QMainWindow):
         """Set the nth frame value."""
         self.video_panel.update_nth_frame(value)
         self.__nth_frame = value
-        print(f"Nth frame: {value}")
 
     def set_bounding_box_max(self, value):
         """Set the bounding box max value."""
@@ -98,8 +94,15 @@ class MainWindow(QMainWindow):
         """Set the video device."""
         self.__device_id = device
         if device != -1:
-            self.video_panel.set_video_stream(VideoStream(device, 'camera'))
+            self.video_panel.setup_videocapture(device)
 
         if device == -1:
             # Clear the video device settings.
             print("Video device removed.")
+
+    def closeEvent(self, event):
+        # Ensure processors stop when widget is closed
+        self.video_panel.stop_video()
+        while self.video_panel.detection_processor is not None and self.video_panel.renderer is not None:
+            time.sleep(0.1)
+        event.accept()
