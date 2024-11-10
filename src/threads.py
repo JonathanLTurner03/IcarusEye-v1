@@ -199,7 +199,6 @@ class DetectionProcessor(Thread):
     def run(self):
         while self.alive:
             frames = []
-            print('running')
             while self.running and self.cap.isOpened():
                 if not self.running:
                     break  # Exit immediately if running is set to False
@@ -211,7 +210,7 @@ class DetectionProcessor(Thread):
                 frames.append(frame)
                 if len(frames) == self.batch_size:
                     try:
-                        results = self.model(frames)
+                        results = self.model(frames, verbose=False)
                         for frame, result in zip(frames, results):
                             if not self.running:
                                 break  # Stop processing if running is set to False
@@ -221,7 +220,6 @@ class DetectionProcessor(Thread):
                     except Exception as e:
                         print(f"Error during detection: {e}")
 
-            print('loop exited')
             # Cleanup if there are remaining frames and the thread is still running
             if frames:
                 try:
