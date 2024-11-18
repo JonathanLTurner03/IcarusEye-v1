@@ -1,2 +1,0 @@
-PyOpenGL @ git+https://github.com/mcfletch/pyopengl.git@release-3.1.8#egg=PyOpenGL
-PyOpenGL_accelerate @ git+https://github.com/mcfletch/pyopengl.git@release-3.1.8#egg=PyOpenGL_accelerate&subdirectory=accelerate
