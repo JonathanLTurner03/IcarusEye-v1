@@ -90,14 +90,12 @@ class RenderProcessor(QThread):
             while self.running:
                 start_time = time.time()
 
-                # Retrieve a frame and detection results
                 try:
                     frame, results = self.result_queue.get(timeout=1)
                 except:
                     print("No frame in queue; continuing...")
-                    continue  # Skip processing if no frame is available
+                    continue
 
-                # Draw bounding boxes and predictions on the frame
                 try:
                     for result in results:
                         for box in result.boxes:
@@ -124,7 +122,7 @@ class RenderProcessor(QThread):
 
                 avg_frame_time = sum(self.frame_times) / len(self.frame_times)
                 current_fps = 1.0 / avg_frame_time if avg_frame_time > 0 else 0.0
-                self.fps_updated.emit(current_fps)
+
 
                 # Enforce frame rate limit
                 if elapsed_time < self.frame_duration:
@@ -185,8 +183,7 @@ class RenderProcessor(QThread):
 class DetectionProcessor(Thread):
     def __init__(self, video_path, model_path, result_queue, batch_size=4):
         super().__init__()
-        self.video_path = video_path
-        self.cap = cv2.VideoCapture(video_path)
+        self.cap = video_path
         self.running = False
         self.alive = True
         self.result_queue = result_queue
