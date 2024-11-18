@@ -94,7 +94,7 @@ class MainWindow(QMainWindow):
         """Set the video device."""
         self.__device_id = device
         if device != -1:
-            self.video_panel.setup_videocapture(device)
+            self.video_panel.prompt_video_settings(device)
 
         if device == -1:
             # Clear the video device settings.
