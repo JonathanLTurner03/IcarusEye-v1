@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLayout, QLabel,
-                             QSizePolicy, QMessageBox)
+                             QSizePolicy, QMessageBox, QDialog, QSpinBox, QLineEdit, QRadioButton)
 from PyQt6.QtCore import Qt, QTimer, QMutex, QSize
 from ultralytics import YOLO
 import cupy as cp
@@ -68,6 +68,8 @@ class VideoPanel(QWidget):
         self.resize_timer.timeout.connect(self.end_resize)
         self.qt_image = None
 
+        self.previous_time = None
+
         self.video_path = None
         self.model_path = model_path
         self.converting_to_pixmap = False
@@ -120,8 +122,14 @@ class VideoPanel(QWidget):
         pixmap = QPixmap.fromImage(qt_image)
         self.video_display.setPixmap(pixmap)
 
-    def update_fps_display(self, fps):
-        self.fps_label.setText(f"FPS: {fps:.2f}")
+        # Compute and update FPS
+        current_time = time.time()
+        if self.previous_time is not None and self.previous_time != current_time:
+            fps = 1.0 / (current_time - self.previous_time)
+            self.fps_label.setText(f"FPS: {fps:.2f}")
+        else:
+            self.fps_label.setText("FPS: 0.0")
+        self.previous_time = current_time
 
     def stop_video(self):
         if self.detection_processor is None or self.detection_processor is None:
@@ -172,10 +180,114 @@ class VideoPanel(QWidget):
         self.renderer.update_multicolor_classes(value)
 
 
-    def setup_videocapture(self, video_path, fps_target=60):
-        self.detection_processor = DetectionProcessor(video_path, self.model_path, self.result_queue)
+    def setup_videocapture(self, video_device, fps_target=60, codec=None, resolution=(1280, 720)):
+        """Set up video capture using a video device or file."""
+        video_stream = cv2.VideoCapture(video_device)
+
+        # Configure video stream properties if it's a number (camera device)
+        if isinstance(video_device, int) and codec is not None:
+            # Set codec
+            video_stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*codec))
+            # Set resolution
+            width, height = resolution
+            video_stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            video_stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            # Set FPS
+            video_stream.set(cv2.CAP_PROP_FPS, fps_target)
+
+        self.detection_processor = DetectionProcessor(video_stream, self.model_path, self.result_queue)
         self.renderer = RenderProcessor(self.result_queue, self.detection_processor.model.names, fps_target=fps_target)
 
         # Connect renderer signal to update display
         self.renderer.frame_updated.connect(self.update_displayed_frame)
-        self.renderer.fps_updated.connect(self.update_fps_display)
+
+    def prompt_video_settings(self, video_device):
+        """Display a dialog to customize FPS, codec, and resolution for a camera device."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Video Settings")
+        layout = QVBoxLayout(dialog)
+
+        # Mode selection (Manual / Automatic)
+        mode_layout = QHBoxLayout()
+        manual_radio = QRadioButton("Manual", dialog)
+        auto_radio = QRadioButton("Automatic", dialog)
+        manual_radio.setChecked(True)  # Default to Manual
+        mode_layout.addWidget(manual_radio)
+        mode_layout.addWidget(auto_radio)
+        layout.addLayout(mode_layout)
+
+        # FPS input
+        fps_layout = QHBoxLayout()
+        fps_label = QLabel("FPS:", dialog)
+        fps_input = QSpinBox(dialog)
+        fps_input.setRange(1, 120)
+        fps_input.setValue(30)  # Default FPS
+        fps_layout.addWidget(fps_label)
+        fps_layout.addWidget(fps_input)
+        layout.addLayout(fps_layout)
+
+        # Codec input
+        codec_layout = QHBoxLayout()
+        codec_label = QLabel("Codec:", dialog)
+        codec_input = QLineEdit(dialog)
+        codec_input.setPlaceholderText("e.g., MJPG")
+        codec_input.setText("MJPG")  # Default codec
+        codec_layout.addWidget(codec_label)
+        codec_layout.addWidget(codec_input)
+        layout.addLayout(codec_layout)
+
+        # Resolution input
+        resolution_layout = QHBoxLayout()
+        resolution_label = QLabel("Resolution (WxH):", dialog)
+        resolution_input = QLineEdit(dialog)
+        resolution_input.setPlaceholderText("e.g., 1280x720")
+        resolution_input.setText("1280x720")  # Default resolution
+        resolution_layout.addWidget(resolution_label)
+        resolution_layout.addWidget(resolution_input)
+        layout.addLayout(resolution_layout)
+
+        # Submit and Cancel buttons
+        button_layout = QHBoxLayout()
+        submit_button = QPushButton("Submit", dialog)
+        cancel_button = QPushButton("Cancel", dialog)
+        button_layout.addWidget(submit_button)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+
+        # Disable inputs when Automatic is selected
+        def toggle_inputs():
+            is_manual = manual_radio.isChecked()
+            fps_input.setVisible(is_manual)
+            codec_input.setVisible(is_manual)
+            resolution_input.setVisible(is_manual)
+
+        manual_radio.toggled.connect(toggle_inputs)
+        auto_radio.toggled.connect(toggle_inputs)
+
+        # Handle dialog result
+        def accept_settings():
+            if auto_radio.isChecked():
+                # Automatic mode: Pass video_device with None for other parameters
+                self.setup_videocapture(video_device, fps_target=None, codec=None, resolution=None)
+            else:
+                # Manual mode: Validate and apply settings
+                resolution = resolution_input.text()
+                try:
+                    width, height = map(int, resolution.split('x'))
+                except ValueError:
+                    QMessageBox.warning(self, "Invalid Input", "Resolution must be in the format WxH, e.g., 1920x1080.")
+                    return
+
+                # Apply settings
+                fps = fps_input.value()
+                codec = codec_input.text()
+
+                # Set up video capture with manual settings
+                self.setup_videocapture(video_device, fps_target=fps, codec=codec, resolution=(width, height))
+
+            dialog.accept()
+
+        submit_button.clicked.connect(accept_settings)
+        cancel_button.clicked.connect(dialog.reject)
+
+        dialog.exec()
