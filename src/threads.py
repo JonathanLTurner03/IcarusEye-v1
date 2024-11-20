@@ -8,6 +8,7 @@ import torch
 from ultralytics import YOLO
 import time
 from threading import Thread, Lock
+import cupy as cp
 
 
 def is_ffmpeg_installed():
@@ -97,16 +98,27 @@ class RenderProcessor(QThread):
                     continue
 
                 try:
+                    box_count = 0
                     for result in results:
-                        for box in result.boxes:
+                        # Extract all boxes into a list
+                        boxes = list(result.boxes)
+
+                        # Sort the boxes by confidence in descending order
+                        sorted_boxes = sorted(boxes, key=lambda box: box.conf.item(), reverse=True)
+
+                        # Iterate over sorted boxes
+                        for box in sorted_boxes:
+                            box_count += 1
                             x1, y1, x2, y2 = map(int, box.xyxy[0])
                             conf = box.conf.item()
                             cls = int(box.cls.item())
                             label = f"{self.model_names[cls]}: {conf:.2f}"
-                            if conf > self.conf_thres:
+                            if conf >= self.conf_thres:
                                 cv2.rectangle(frame, (x1, y1), (x2, y2), self.color_map[cls], 2)
                                 cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                                             self.color_map[cls], 2)
+
+                    print(f"Number of boxes: {box_count}")
 
                     # Emit the processed frame as a numpy array
                     self.frame_updated.emit(frame)
@@ -208,6 +220,7 @@ class DetectionProcessor(Thread):
                 if len(frames) == self.batch_size:
                     try:
                         results = self.model(frames, verbose=False)
+
                         for frame, result in zip(frames, results):
                             if not self.running:
                                 break  # Stop processing if running is set to False
