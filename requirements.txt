@@ -1,0 +1,6 @@
+PyYAML~=6.0.2
+PyQt6~=6.7.1
+numpy~=1.26.4
+torch~=2.4.1+cu118
+opencv-python~=4.10.0.84
+ultralytics~=8.3.1

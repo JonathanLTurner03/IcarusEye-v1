@@ -4,6 +4,17 @@ from src.ui.video_panel import VideoPanel
 from src.video_stream import VideoStream
 import yaml
 import time
+import os
+import sys
+
+
+def resource_path(relative_path):
+    # Get the path to the resource, handling PyInstaller's temp folder (_MEIPASS)
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 class MainWindow(QMainWindow):
@@ -11,7 +22,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Load the configuration file
-        with open('config/config.yaml', 'r') as file:
+        with open(resource_path('config/config.yaml'), 'r') as file:
             self.config = yaml.safe_load(file)
 
         # Setup properties

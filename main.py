@@ -11,7 +11,6 @@ import time
 def main():
     app = QApplication(sys.argv)
 
-
     # Show loading screen
     loading_screen = LoadingScreen()
     loading_screen.show()
@@ -22,7 +21,7 @@ def main():
     main_window.resize(int(screen_size.width()/1.25), int(screen_size.height()/1.5))
     main_window.setWindowTitle("IcarusEye - Drone Object Detection System")
 
-    main_window.setWindowIcon(QIcon("resources/icons/Icarus Eye.svg"))
+    main_window.setWindowIcon(QIcon("resources/icons/Icarus Icon.ico"))
 
     time.sleep(1)
     # Hide loading screen and show main window

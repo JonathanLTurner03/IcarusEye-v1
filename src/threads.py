@@ -8,7 +8,6 @@ import torch
 from ultralytics import YOLO
 import time
 from threading import Thread, Lock
-import cupy as cp
 
 
 def is_ffmpeg_installed():
@@ -214,6 +213,7 @@ class DetectionProcessor(Thread):
     def run(self):
         while self.alive:
             frames = []
+
             while self.running and self.cap.isOpened():
                 if not self.running:
                     break  # Exit immediately if running is set to False

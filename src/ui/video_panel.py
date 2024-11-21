@@ -5,7 +5,6 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLa
                              QSizePolicy, QMessageBox, QDialog, QSpinBox, QLineEdit, QRadioButton)
 from PyQt6.QtCore import Qt, QTimer, QMutex, QSize
 from ultralytics import YOLO
-import cupy as cp
 import torch
 import yaml
 from PyQt6.QtGui import QPixmap, QImage
