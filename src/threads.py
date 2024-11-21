@@ -18,6 +18,7 @@ def is_ffmpeg_installed():
     except FileNotFoundError:
         return False
 
+
 def list_ffmpeg_devices():
     if not is_ffmpeg_installed():
         print("FFmpeg is not installed. Please install FFmpeg to use this function.")
@@ -39,6 +40,7 @@ def list_ffmpeg_devices():
         print(f"Error listing video capture devices with FFmpeg: {e}")
 
     return devices
+
 
 def list_opencv_devices(max_devices=5, api=cv2.CAP_DSHOW):
     devices = []
@@ -84,6 +86,7 @@ class RenderProcessor(QThread):
         self.alive = True
         self.frame_times = []
         self.conf_thres = 0.5
+        self.max_boxes = 100
         self.toggle_color_map(False)
 
     def run(self):
@@ -108,6 +111,8 @@ class RenderProcessor(QThread):
 
                         # Iterate over sorted boxes
                         for box in sorted_boxes:
+                            if box_count > self.max_boxes:
+                                break
                             box_count += 1
                             x1, y1, x2, y2 = map(int, box.xyxy[0])
                             conf = box.conf.item()
@@ -117,8 +122,6 @@ class RenderProcessor(QThread):
                                 cv2.rectangle(frame, (x1, y1), (x2, y2), self.color_map[cls], 2)
                                 cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                                             self.color_map[cls], 2)
-
-                    print(f"Number of boxes: {box_count}")
 
                     # Emit the processed frame as a numpy array
                     self.frame_updated.emit(frame)
@@ -134,7 +137,6 @@ class RenderProcessor(QThread):
 
                 avg_frame_time = sum(self.frame_times) / len(self.frame_times)
                 current_fps = 1.0 / avg_frame_time if avg_frame_time > 0 else 0.0
-
 
                 # Enforce frame rate limit
                 if elapsed_time < self.frame_duration:
@@ -173,6 +175,9 @@ class RenderProcessor(QThread):
     def update_confidence_threshold(self, value):
         self.conf_thres = value
 
+    def update_max_boxes(self, value):
+        self.max_boxes = value
+
     def update_multicolor_classes(self, value):
         self.toggle_color_map(value)
 
@@ -200,6 +205,7 @@ class DetectionProcessor(Thread):
         self.alive = True
         self.result_queue = result_queue
         self.batch_size = batch_size
+        self.nth_frame = 1
 
         # Load the YOLO model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

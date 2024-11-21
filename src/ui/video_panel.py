@@ -179,6 +179,10 @@ class VideoPanel(QWidget):
         """Update the colormap value."""
         self.renderer.update_multicolor_classes(value)
 
+    def update_nth_frame(self, value):
+        """Update the nth frame value."""
+        self.detection_processor.update_nth_frame(value)
+
 
     def setup_videocapture(self, video_device, fps_target=60, codec=None, resolution=(1280, 720)):
         """Set up video capture using a video device or file."""
@@ -200,6 +204,9 @@ class VideoPanel(QWidget):
 
         # Connect renderer signal to update display
         self.renderer.frame_updated.connect(self.update_displayed_frame)
+
+    def update_max_boxes(self, value):
+        self.renderer.update_max_boxes(value)
 
     def prompt_video_settings(self, video_device):
         """Display a dialog to customize FPS, codec, and resolution for a camera device."""
