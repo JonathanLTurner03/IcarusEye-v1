@@ -1,6 +1,5 @@
 import numpy as np
 from PyQt6.QtCore import pyqtSignal, QObject, QThread
-from PyQt6.QtGui import QImage
 import subprocess
 import cv2
 import re
@@ -87,6 +86,7 @@ class RenderProcessor(QThread):
         self.conf_thres = 0.5
         self.max_boxes = 100
         self.toggle_color_map(False)
+        self.use_tracking = True
 
     def run(self):
         while self.alive:
@@ -106,7 +106,7 @@ class RenderProcessor(QThread):
                     xyxy_boxes = boxes.xyxy.cpu().numpy().astype(int)
 
                     # Access tracking IDs if available
-                    if hasattr(boxes, 'id') and boxes.id is not None:
+                    if hasattr(boxes, 'id') and boxes.id is not None and self.use_tracking:
                         tracking_ids = boxes.id.cpu().numpy().astype(int)
                     else:
                         tracking_ids = [None] * len(boxes)
@@ -176,6 +176,9 @@ class RenderProcessor(QThread):
                     9: (0, 255, 0),
                 }
 
+    def update_tracking(self, value):
+        self.use_tracking = value
+
     def update_confidence_threshold(self, value):
         self.conf_thres = value
 
@@ -237,16 +240,16 @@ class DetectionProcessor(Thread):
                 frames.append(frame)
                 if len(frames) == self.batch_size:
                     try:
-                        if self.use_tracking:
+                        if self.use_tracking is True:
                             # Use model.track() when tracking is enabled
                             results = self.model.track(source=frames,
-                                                       conf=self.conf_thres,
                                                        tracker=self.tracker_config_path,
+                                                       stream=True,
                                                        verbose=False)
                         else:
                             # Use model.predict() when tracking is disabled
                             results = self.model.predict(source=frames,
-                                                         conf=self.conf_thres,
+                                                         stream=True,
                                                          verbose=False)
 
                         for frame, result in zip(frames, results):
@@ -278,15 +281,9 @@ class DetectionProcessor(Thread):
                 except Exception as e:
                     print(f"Error during final batch processing: {e}")
 
-    # Methods to update tracking
     def update_tracking(self, value):
+        print(f"Tracking set to: {value}")
         self.use_tracking = value
-
-    def enable_tracking(self):
-        self.use_tracking = True
-
-    def disable_tracking(self):
-        self.use_tracking = False
 
     def is_stopped(self):
         return not self.running

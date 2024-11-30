@@ -1,20 +1,8 @@
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QScrollArea
 from src.ui.config_panel import ConfigPanel
 from src.ui.video_panel import VideoPanel
-from src.video_stream import VideoStream
 import yaml
 import time
-import os
-import sys
-
-
-def resource_path(relative_path):
-    # Get the path to the resource, handling PyInstaller's temp folder (_MEIPASS)
-    if hasattr(sys, '_MEIPASS'):
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
 
 
 class MainWindow(QMainWindow):
@@ -22,7 +10,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # Load the configuration file
-        with open(resource_path('config/config.yaml'), 'r') as file:
+        with open('config/config.yaml', 'r') as file:
             self.config = yaml.safe_load(file)
 
         # Setup properties
@@ -117,3 +105,7 @@ class MainWindow(QMainWindow):
         while self.video_panel.detection_processor is not None and self.video_panel.renderer is not None:
             time.sleep(0.1)
         event.accept()
+
+    def toggle_detection(self, value):
+        """Toggle the detection value."""
+        self.video_panel.update_detection(True if value == 2 else False)

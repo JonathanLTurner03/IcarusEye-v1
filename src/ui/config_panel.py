@@ -113,6 +113,11 @@ class ConfigPanel(QWidget):
         # Connect the slider's valueChanged signal to the update method
         self.__confidence_slider.valueChanged.connect(self.__update_confidence)
 
+        # Enable/Disable Detection
+        __detection_checkbox = QCheckBox("Enable Detection")
+        __detection_checkbox.setChecked(True)
+        __detection_checkbox.stateChanged.connect(self.controller.toggle_detection)
+
         # Enable/Disable Class-Specific Bounding Boxes
         __class_specific_bbox_checkbox = QCheckBox("Enable Class-Specific Bounding Boxes")
         __class_specific_bbox_checkbox.stateChanged.connect(self.__toggle_class_specific_bbox)
@@ -141,6 +146,7 @@ class ConfigPanel(QWidget):
         detection_layout = QVBoxLayout()
         detection_layout.addWidget(self.__confidence_label)
         detection_layout.addWidget(self.__confidence_slider)
+        detection_layout.addWidget(__detection_checkbox)
         detection_layout.addWidget(__class_specific_bbox_checkbox)
         detection_layout.addWidget(self.__omit_classes_checkbox)
         detection_layout.addWidget(self.__classes_dropdown)
