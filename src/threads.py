@@ -100,27 +100,32 @@ class RenderProcessor(QThread):
                     continue
 
                 try:
-                    box_count = 0
-                    for result in results:
-                        # Extract all boxes into a list
-                        boxes = list(result.boxes)
+                    boxes = results.boxes
+                    confidences = boxes.conf.cpu().numpy()
+                    class_ids = boxes.cls.cpu().numpy().astype(int)
+                    xyxy_boxes = boxes.xyxy.cpu().numpy().astype(int)
 
-                        # Sort the boxes by confidence in descending order
-                        sorted_boxes = sorted(boxes, key=lambda box: box.conf.item(), reverse=True)
+                    # Access tracking IDs if available
+                    if hasattr(boxes, 'id') and boxes.id is not None:
+                        tracking_ids = boxes.id.cpu().numpy().astype(int)
+                    else:
+                        tracking_ids = [None] * len(boxes)
 
-                        # Iterate over sorted boxes
-                        for box in sorted_boxes:
-                            if box_count > self.max_boxes:
-                                break
-                            box_count += 1
-                            x1, y1, x2, y2 = map(int, box.xyxy[0])
-                            conf = box.conf.item()
-                            cls = int(box.cls.item())
+                    # Combine all information
+                    for i in range(len(boxes)):
+                        if confidences[i] >= self.conf_thres:
+                            x1, y1, x2, y2 = xyxy_boxes[i]
+                            conf = confidences[i]
+                            cls = class_ids[i]
                             label = f"{self.model_names[cls]}: {conf:.2f}"
-                            if conf >= self.conf_thres:
-                                cv2.rectangle(frame, (x1, y1), (x2, y2), self.color_map[cls], 2)
-                                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                                            self.color_map[cls], 2)
+
+                            # Include tracking ID if available
+                            if tracking_ids[i] is not None:
+                                label = f"ID {tracking_ids[i]} {label}"
+
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), self.color_map[cls], 2)
+                            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                                        0.5, self.color_map[cls], 2)
 
                     # Emit the processed frame as a numpy array
                     self.frame_updated.emit(frame)
@@ -205,10 +210,17 @@ class DetectionProcessor(Thread):
         self.result_queue = result_queue
         self.batch_size = batch_size
         self.nth_frame = 1
+        self.conf_thres = 0.5
 
         # Load the YOLO model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = YOLO(model_path).to(self.device)
+
+        # Add tracking attribute
+        self.use_tracking = True  # Set tracking to be on by default
+
+        # Set tracker configuration path
+        self.tracker_config_path = 'models/bytetrack.yaml'  # Use default tracker config
 
     def run(self):
         while self.alive:
@@ -225,7 +237,17 @@ class DetectionProcessor(Thread):
                 frames.append(frame)
                 if len(frames) == self.batch_size:
                     try:
-                        results = self.model(frames, verbose=False)
+                        if self.use_tracking:
+                            # Use model.track() when tracking is enabled
+                            results = self.model.track(source=frames,
+                                                       conf=self.conf_thres,
+                                                       tracker=self.tracker_config_path,
+                                                       verbose=False)
+                        else:
+                            # Use model.predict() when tracking is disabled
+                            results = self.model.predict(source=frames,
+                                                         conf=self.conf_thres,
+                                                         verbose=False)
 
                         for frame, result in zip(frames, results):
                             if not self.running:
@@ -239,13 +261,32 @@ class DetectionProcessor(Thread):
             # Cleanup if there are remaining frames and the thread is still running
             if frames:
                 try:
-                    results = self.model(frames)
+                    if self.use_tracking:
+                        results = self.model.track(source=frames,
+                                                   conf=self.conf_thres,
+                                                   tracker=self.tracker_config_path,
+                                                   verbose=False)
+                    else:
+                        results = self.model.predict(source=frames,
+                                                     conf=self.conf_thres,
+                                                     verbose=False)
+
                     for frame, result in zip(frames, results):
                         if not self.running:
                             break
                         self.result_queue.put((frame, result))
                 except Exception as e:
                     print(f"Error during final batch processing: {e}")
+
+    # Methods to update tracking
+    def update_tracking(self, value):
+        self.use_tracking = value
+
+    def enable_tracking(self):
+        self.use_tracking = True
+
+    def disable_tracking(self):
+        self.use_tracking = False
 
     def is_stopped(self):
         return not self.running

@@ -1,0 +1,1 @@
+from yolox.tracker.byte_tracker import BYTETracker
