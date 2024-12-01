@@ -264,9 +264,11 @@ class ConfigPanel(QWidget):
         self.__is_live = False
         if not enabled:
             self.__omitted_classes_label.setText("Omitted Classes: (disabled)")
+            self.controller.update_omitted_classes([])
         else:
             self.__omitted_classes_label.setText("Omitted Classes: None")
             self.__update_omitted_classes_label()
+            self.controller.update_omitted_classes(self.__omitted_classes)
 
     def __add_class_to_omit(self):
         """Add the selected class to the omitted classes list."""
