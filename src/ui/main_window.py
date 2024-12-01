@@ -23,6 +23,8 @@ class MainWindow(QMainWindow):
 
         # Get the available classes
         self.__class_details = self.config['class_details']
+        self.__name_id_map = {details['class']: class_id for class_id, details in self.__class_details.items()}
+
         self.__multi_color_classes = False
         self.__omit_classes = []
 
@@ -77,7 +79,8 @@ class MainWindow(QMainWindow):
 
     def update_omitted_classes(self, classes):
         """Update the omitted classes."""
-        self.__omit_classes = classes
+        self.__omit_classes = [self.__name_id_map[class_name] for class_name in classes]
+        self.video_panel.update_omitted_classes(self.__omit_classes)
 
     def set_nth_frame(self, value):
         """Set the nth frame value."""

@@ -89,15 +89,11 @@ class VideoPanel(QWidget):
             return
 
         # Start processors if not running
-        print('Attempting to start video')
         self.detection_processor.resume()
         self.renderer.resume()
-        print(f'Detection Processor Alive: {self.detection_processor.is_alive()} Stopped: {self.detection_processor.is_stopped()}')
         if not self.detection_processor.is_alive():
-            print('Starting detection processor')
             self.detection_processor.start()
         if not self.renderer.isRunning():
-            print('Starting renderer')
             self.renderer.start()
 
     def pause_video(self):
@@ -105,9 +101,7 @@ class VideoPanel(QWidget):
             return
 
         # Stop both processors
-        print('Attempting to stop detection processor')
         self.detection_processor.stop()
-        print('Attempting to stop renderer')
         self.renderer.stop()
 
     def update_displayed_frame(self, frame: np.ndarray):
@@ -301,3 +295,6 @@ class VideoPanel(QWidget):
     def update_detection(self, value):
         self.detection_processor.update_tracking(value)
         self.renderer.update_tracking(value)
+
+    def update_omitted_classes(self, classes):
+        self.renderer.update_omitted_classes(classes)

@@ -66,7 +66,6 @@ class DeviceScanner(QObject):
         else:
             for index in list_opencv_devices():
                 device_info[index] = f"Device {index}"
-        print(device_info)
         self.devices_scanned.emit(device_info)
 
 
@@ -87,6 +86,7 @@ class RenderProcessor(QThread):
         self.max_boxes = 100
         self.toggle_color_map(False)
         self.use_tracking = True
+        self.omit_classes = []
 
     def run(self):
         while self.alive:
@@ -112,11 +112,16 @@ class RenderProcessor(QThread):
                         tracking_ids = [None] * len(boxes)
 
                     # Combine all information
+                    num_of_boxes = 0
                     for i in range(len(boxes)):
-                        if confidences[i] >= self.conf_thres:
+                        if confidences[i] >= self.conf_thres and num_of_boxes < self.max_boxes:
+                            cls = class_ids[i]
+                            if cls in self.omit_classes:
+                                continue
+
+                            num_of_boxes = num_of_boxes + 1
                             x1, y1, x2, y2 = xyxy_boxes[i]
                             conf = confidences[i]
-                            cls = class_ids[i]
                             label = f"{self.model_names[cls]}: {conf:.2f}"
 
                             # Include tracking ID if available
@@ -184,6 +189,9 @@ class RenderProcessor(QThread):
 
     def update_max_boxes(self, value):
         self.max_boxes = value
+
+    def update_omitted_classes(self, classes):
+        self.omit_classes = classes
 
     def update_multicolor_classes(self, value):
         self.toggle_color_map(value)
@@ -284,6 +292,9 @@ class DetectionProcessor(Thread):
     def update_tracking(self, value):
         print(f"Tracking set to: {value}")
         self.use_tracking = value
+
+    def update_nth_frame(self, value):
+        pass
 
     def is_stopped(self):
         return not self.running

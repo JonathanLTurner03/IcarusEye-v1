@@ -273,6 +273,7 @@ class ConfigPanel(QWidget):
         selected_class = self.__classes_dropdown.currentText().split(':')[0].strip()
         if selected_class and selected_class not in self.__omitted_classes:
             self.__omitted_classes.append(selected_class)
+            print(self.__omitted_classes)
             self.__update_omitted_classes_label()
 
     def __remove_class_from_omit(self):
