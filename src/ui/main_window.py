@@ -109,6 +109,6 @@ class MainWindow(QMainWindow):
             time.sleep(0.1)
         event.accept()
 
-    def toggle_detection(self, value):
+    def toggle_tracking(self, value):
         """Toggle the detection value."""
-        self.video_panel.update_detection(True if value == 2 else False)
+        self.video_panel.update_tracking(True if value == 2 else False)

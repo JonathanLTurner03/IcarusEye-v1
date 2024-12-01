@@ -292,7 +292,7 @@ class VideoPanel(QWidget):
 
         dialog.exec()
 
-    def update_detection(self, value):
+    def update_tracking(self, value):
         self.detection_processor.update_tracking(value)
         self.renderer.update_tracking(value)
 
