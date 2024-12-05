@@ -1,6 +1,6 @@
 # <h1 align="center">IcarusEye</h1>
 
-<img src="resources/icons/Icarus%20Recolor.svg" alt="Icarus Eye" style="align-items: center; padding-left: 40%; padding-right: 40%">
+<img src="resources/icons/Icarus%20Recolor.svg" alt="Icarus Eye" width="25%" style="align-items: center; padding-left: 40%; padding-right: 40%">
 
 <h3 align="center">Real-time Drone Object Detection & Tracking</h3>
 
@@ -29,14 +29,14 @@ to the Greek myth of Icarus, who flew too close and fell, and the vigilant Eye o
 The project is built using a custom YOLOv8s model trained on the VisDrone2019-DET Dataset. The project is built with
 Python utilizing the following libraries:
 
-| :books: Library | :spiral_notepad: Description         | Version   | :globe_with_meridians: Website                                              | :pie: PyPi Repo                                           |
-|-----------------|--------------------------------------|-----------|-----------------------------------------------------------------------------|-----------------------------------------------------------|
-| Ultralytics     | Open Source Object Detection Library | 8.3.1     | [Ultralytics.com](https://www.ultralytics.com/)                             | [ultralytics](https://pypi.org/project/ultralytics/)      |
-| OpenCV          | Open Source Computer Vision Library  | 4.10.0.84 | [OpenCV.org](https://opencv.org/)                                           | [opencv-python](https://pypi.org/project/opencv-python/)  |
-| PyTorch         | Open Source Machine Learning Library | 2.4.1     | [PyTorch.org](https://pytorch.org/)                                         | [torch](https://pypi.org/project/torch/)                  |
-| PyQt6           | Python Binding for Qt                | 6.7.1     | [RiverbankComputing.com](https://www.riverbankcomputing.com/software/pyqt/) | [PyQt6](https://pypi.org/project/PyQt6/)                  |
-| Numpy           | Scientific Computing Library         | 1.26.4    | [NumPy.org](https://numpy.org/)                                             | [numpy](https://pypi.org/project/numpy/)                  |
-| Matplotlib      | Data Visualization Library           | 3.5.1     | [MatPlotLib](https://matplotlib.org/)                                       | [PyPi](https://pypi.org/project/matplotlib/)              |
+| :books: Library | :spiral_notepad: Description         | Version   | :globe_with_meridians: Website                                     | :pie: PyPi Repo                                           |
+|-----------------|--------------------------------------|-----------|--------------------------------------------------------------------|-----------------------------------------------------------|
+| Ultralytics     | Open Source Object Detection Library | 8.3.1     | [Ultralytics.com](https://www.ultralytics.com/)                    | [ultralytics](https://pypi.org/project/ultralytics/)      |
+| OpenCV          | Open Source Computer Vision Library  | 4.10.0.84 | [OpenCV.org](https://opencv.org/)                                  | [opencv-python](https://pypi.org/project/opencv-python/)  |
+| PyTorch         | Open Source Machine Learning Library | 2.4.1     | [PyTorch.org](https://pytorch.org/)                                | [torch](https://pypi.org/project/torch/)                  |
+| PyQt6           | Python Binding for Qt                | 6.7.1     | [RiverbankComp](https://www.riverbankcomputing.com/software/pyqt/) | [PyQt6](https://pypi.org/project/PyQt6/)                  |
+| Numpy           | Scientific Computing Library         | 1.26.4    | [NumPy.org](https://numpy.org/)                                    | [numpy](https://pypi.org/project/numpy/)                  |
+| Matplotlib      | Data Visualization Library           | 3.5.1     | [MatPlotLib](https://matplotlib.org/)                              | [PyPi](https://pypi.org/project/matplotlib/)              |
 
 ## Features
 The project was built with the edge device in mind, and as such, the project is optimized for performance / tuning.
@@ -52,6 +52,8 @@ The project has the following features:
 - *and more...*
 
 ## Installation
+
+### Installation Method 1: Cloning and Directly running from Source
 When installing the project, it is *recommended* to use a virtual environment. Along with this, since the project 
 utilizes `torch` and `torchvision`, it is recommended to install the libraries with `CUDA` support. Without this, the
 project will run on the CPU, which will be significantly slower. The following steps will guide you through the
@@ -72,6 +74,7 @@ cd IcarusEye
 
 Prior to this next step, if you have a CUDA compatible GPU, you can modify the requirements.txt file to include the
 appropriate version of `torch` and `torchvision`. If you do not have a CUDA compatible GPU, you can skip this step.
+
 2. Install the required libraries:
 ```bash
 pip install -r requirements.txt 
@@ -82,11 +85,24 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
+### Installation Method 2: Using the PyInstaller Executable
+***In Progress***
+
 ## Demonstration / Examples
+***In Progress***
 
 ## Usage
 The project is built to be user-friendly and easy to use. The project is built with a GUI using PyQt6. The following 
 steps will guide you through the usage of the project. 
+
+**Changing the Model**
+- Click the `Model` dropdown menu.
+- Select change YOLO model.
+- Select the model you wish to use.
+- If the model is not in the dropdown or you wish to use a custom model:
+  - click the `Custom` option and select the model's `.pt` file.
+  - Click `OK`.
+- Click `Submit` to apply the changes.
 
 **Loading a pre-recorded video**
 - Click the `File Input` radio button.
@@ -104,3 +120,38 @@ steps will guide you through the usage of the project.
       - Select the `Resolution` Textbox and specify the desired resolution *Note: it must be in the format of `widthxheight`.
       - Click `OK`.
   - After selecting the device and settings, click `Play` to start the video feed.
+
+*Still In Progress*
+
+## Limitations
+***In Progress***
+
+## Future Work
+***In Progress***
+
+## License
+Licensed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+```
+MIT License
+
+Copyright (c) 2024 Jonathan Turner
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
