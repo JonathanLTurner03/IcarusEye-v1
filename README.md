@@ -10,7 +10,8 @@ Icarus Eye is built using a custom YOLOv8s model trained on the VisDrone2019-DET
 project for a Machine Vision course at KSU. The project aims to be a proof of concept for real-time object detection and
 tracking using a drone. The project is built using Python, OpenCV, and PyTorch. The project is built to be modular and
 customizable, allowing for easy integration with other models and datasets. The project's name is a pun and a reference 
-to the Greek myth of Icarus, who flew too close and fell, and the vigilant Eye of Sauron from the Lord of the Rings.
+to the Greek myth of Icarus, who flew too close to the sun and fell, and the vigilant Eye of Sauron from the Lord of the 
+Rings.
 
 ## Table of Contents
 
@@ -19,24 +20,26 @@ to the Greek myth of Icarus, who flew too close and fell, and the vigilant Eye o
 - [Features](#features)
 - [Installation](#installation)
 - [Demonstration / Examples](#demonstration--examples)
-- Usage
-- Limitations
-- Future Work
-- License
+- [Usage](#usage)
+- [Limitations](#limitations)
+- [Future Work](#future-work)
+- [License](#license)
 
 # Introduction
 
 The project is built using a custom YOLOv8s model trained on the VisDrone2019-DET Dataset. The project is built with
 Python utilizing the following libraries:
 
-| :books: Library | :spiral_notepad: Description         | Version   | :globe_with_meridians: Website                                     | :pie: PyPi Repo                                           |
-|-----------------|--------------------------------------|-----------|--------------------------------------------------------------------|-----------------------------------------------------------|
-| Ultralytics     | Open Source Object Detection Library | 8.3.1     | [Ultralytics.com](https://www.ultralytics.com/)                    | [ultralytics](https://pypi.org/project/ultralytics/)      |
-| OpenCV          | Open Source Computer Vision Library  | 4.10.0.84 | [OpenCV.org](https://opencv.org/)                                  | [opencv-python](https://pypi.org/project/opencv-python/)  |
-| PyTorch         | Open Source Machine Learning Library | 2.4.1     | [PyTorch.org](https://pytorch.org/)                                | [torch](https://pypi.org/project/torch/)                  |
-| PyQt6           | Python Binding for Qt                | 6.7.1     | [RiverbankComp](https://www.riverbankcomputing.com/software/pyqt/) | [PyQt6](https://pypi.org/project/PyQt6/)                  |
-| Numpy           | Scientific Computing Library         | 1.26.4    | [NumPy.org](https://numpy.org/)                                    | [numpy](https://pypi.org/project/numpy/)                  |
-| Matplotlib      | Data Visualization Library           | 3.5.1     | [MatPlotLib](https://matplotlib.org/)                              | [PyPi](https://pypi.org/project/matplotlib/)              |
+| :books: Library | :spiral_notepad: Description         | Version   | :globe_with_meridians: Website                                     | :pie: PyPi Repo                                          |
+|-----------------|--------------------------------------|-----------|--------------------------------------------------------------------|----------------------------------------------------------|
+| Ultralytics     | Open Source Object Detection Library | 8.3.1     | [Ultralytics.com](https://www.ultralytics.com/)                    | [ultralytics](https://pypi.org/project/ultralytics/)     |
+| OpenCV          | Open Source Computer Vision Library  | 4.10.0.84 | [OpenCV.org](https://opencv.org/)                                  | [opencv-python](https://pypi.org/project/opencv-python/) |
+| PyTorch         | Open Source Machine Learning Library | 2.4.1     | [PyTorch.org](https://pytorch.org/)                                | [torch](https://pypi.org/project/torch/)                 |
+| PyQt6           | Python Binding for Qt                | 6.7.1     | [RiverbankComp](https://www.riverbankcomputing.com/software/pyqt/) | [PyQt6](https://pypi.org/project/PyQt6/)                 |
+| Numpy           | Scientific Computing Library         | 1.26.4    | [NumPy.org](https://numpy.org/)                                    | [numpy](https://pypi.org/project/numpy/)                 |
+| MatPlotLib      | Data Visualization Library           | 3.5.1     | [MatPlotLib](https://matplotlib.org/)                              | [matplotlib](https://pypi.org/project/matplotlib/)       |
+
+The core of the project is built using the Ultralytics YOLOv8s model along with Ultralytics ByteTrack implementation.
 
 ## Features
 The project was built with the edge device in mind, and as such, the project is optimized for performance / tuning.
