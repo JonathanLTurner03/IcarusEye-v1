@@ -1,7 +1,8 @@
 # <h1 align="center">IcarusEye</h1>
 
-<img src="resources/icons/IcarusEye-Banner_stretched.svg" alt="Icarus Eye" width="100%">
+<img src="resources/icons/IcarusEye-Banner-square.svg" alt="Icarus Eye" width="100%">
 
+---
 ## Description
 Icarus Eye is built using a custom YOLOv8s model trained on the VisDrone2019-DET Dataset. This project is a semester 
 project for a Machine Vision course at KSU. The project aims to be a proof of concept for real-time object detection and
