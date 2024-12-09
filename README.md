@@ -1,8 +1,6 @@
 # <h1 align="center">IcarusEye</h1>
 
-<img src="resources/icons/Icarus%20Recolor.svg" alt="Icarus Eye" width="25%" style="align-items: center; padding-left: 40%; padding-right: 40%">
-
-<h3 align="center">Real-time Drone Object Detection & Tracking</h3>
+<img src="resources/icons/IcarusEye-Banner.svg" alt="Icarus Eye" width="100%">
 
 ---
 ## Description
