@@ -73,6 +73,12 @@ class VideoPanel(QWidget):
         self.model_path = model_path
         self.converting_to_pixmap = False
 
+        self.conf_thres = 0.5
+        self.nth_frame = 1
+        self.max_boxes = 100
+        self.omitted_classes = []
+        self.tracking = True
+
     def toggle_play_pause(self):
         if self.detection_processor is None or self.detection_processor is None:
             return
@@ -165,6 +171,9 @@ class VideoPanel(QWidget):
 
 
     def update_confidence_threshold(self, value):
+        self.conf_thres = value
+        if self.detection_processor is None or self.detection_processor is None:
+            return
         """Update the confidence threshold for the detection model."""
         self.renderer.update_confidence_threshold(value)
 
@@ -173,6 +182,9 @@ class VideoPanel(QWidget):
         self.renderer.update_multicolor_classes(value)
 
     def update_nth_frame(self, value):
+        self.nth_frame = value
+        if self.detection_processor is None or self.detection_processor is None:
+            return
         """Update the nth frame value."""
         self.detection_processor.update_nth_frame(value)
 
@@ -192,13 +204,19 @@ class VideoPanel(QWidget):
             # Set FPS
             video_stream.set(cv2.CAP_PROP_FPS, fps_target)
 
-        self.detection_processor = DetectionProcessor(video_stream, self.model_path, self.result_queue)
-        self.renderer = RenderProcessor(self.result_queue, self.detection_processor.model.names, fps_target=fps_target)
+        self.detection_processor = DetectionProcessor(video_stream, self.model_path, self.result_queue,
+                                                      nth_frame=self.nth_frame)
+        self.renderer = RenderProcessor(self.result_queue, self.detection_processor.model.names, fps_target=fps_target,
+                                        max_boxes=self.max_boxes, omit_classes=self.omitted_classes,
+                                        use_tracking=self.tracking, conf_thres=self.conf_thres)
 
         # Connect renderer signal to update display
         self.renderer.frame_updated.connect(self.update_displayed_frame)
 
     def update_max_boxes(self, value):
+        self.max_boxes = value
+        if self.detection_processor is None or self.detection_processor is None:
+            return
         self.renderer.update_max_boxes(value)
 
     def prompt_video_settings(self, video_device):
@@ -293,8 +311,14 @@ class VideoPanel(QWidget):
         dialog.exec()
 
     def update_tracking(self, value):
+        self.tracking = value
+        if self.detection_processor is None or self.detection_processor is None:
+            return
         self.detection_processor.update_tracking(value)
         self.renderer.update_tracking(value)
 
     def update_omitted_classes(self, classes):
+        self.omitted_classes = classes
+        if self.detection_processor is None or self.detection_processor is None:
+            return
         self.renderer.update_omitted_classes(classes)

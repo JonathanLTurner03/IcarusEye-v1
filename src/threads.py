@@ -73,7 +73,8 @@ class RenderProcessor(QThread):
     frame_updated = pyqtSignal(np.ndarray)  # Signal to emit frames to the GUI
     fps_updated = pyqtSignal(float)  # Signal to emit the FPS to the GUI
 
-    def __init__(self, result_queue, model_names, fps_target=60):
+    def __init__(self, result_queue, model_names, fps_target=60, omit_classes=[],
+                 use_tracking=True, max_boxes=100, conf_thres=0.5):
         super().__init__()
         self.result_queue = result_queue
         self.model_names = model_names
@@ -82,11 +83,11 @@ class RenderProcessor(QThread):
         self.running = True
         self.alive = True
         self.frame_times = []
-        self.conf_thres = 0.5
-        self.max_boxes = 100
+        self.conf_thres = conf_thres
+        self.max_boxes = max_boxes
         self.toggle_color_map(False)
-        self.use_tracking = True
-        self.omit_classes = []
+        self.use_tracking = use_tracking
+        self.omit_classes = omit_classes
 
     def run(self):
         while self.alive:
@@ -213,15 +214,15 @@ class RenderProcessor(QThread):
 
 
 class DetectionProcessor(Thread):
-    def __init__(self, video_path, model_path, result_queue, batch_size=4):
+    def __init__(self, video_path, model_path, result_queue, batch_size=4,
+                nth_frame=1):
         super().__init__()
         self.cap = video_path
         self.running = False
         self.alive = True
         self.result_queue = result_queue
         self.batch_size = batch_size
-        self.nth_frame = 1
-        self.conf_thres = 0.5
+        self.nth_frame = nth_frame
 
         # Load the YOLO model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -274,12 +275,10 @@ class DetectionProcessor(Thread):
                 try:
                     if self.use_tracking:
                         results = self.model.track(source=frames,
-                                                   conf=self.conf_thres,
                                                    tracker=self.tracker_config_path,
                                                    verbose=False)
                     else:
                         results = self.model.predict(source=frames,
-                                                     conf=self.conf_thres,
                                                      verbose=False)
 
                     for frame, result in zip(frames, results):
