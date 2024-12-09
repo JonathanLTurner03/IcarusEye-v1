@@ -56,34 +56,54 @@ The project has the following features:
 
 ## Installation
 
+Regardless of the installation method, the project heavily benefits from `ffmpeg` being installed on the system. This
+allows for the video device detection, settings, and controls to be more accessably and user-friendly. 
+
+### Windows Installation
+The following
+link will guide you through the installation process for `ffmpeg` on your system: 
+[FFmpeg Installation](https://www.wikihow.com/Install-FFmpeg-on-Windows)
+
+### Linux Installation (Debian/Ubuntu)
+The following command will install `ffmpeg` on your system:
+```bash
+sudo apt-get install ffmpeg
+```
+
+### MacOS Installation
+The following command will install `ffmpeg` on your system utilizing `brew`:
+```bash
+brew install ffmpeg
+```
+
 ### Installation Method 1: Cloning and Directly running from Source
 When installing the project, it is *recommended* to use a virtual environment. Along with this, since the project 
 utilizes `torch` and `torchvision`, it is recommended to install the libraries with `CUDA` support. Without this, the
 project will run on the CPU, which will be significantly slower. The following steps will guide you through the
 installation process.
 
-* (Optional) Create a virtual environment:
+* ***(Optional) Create a virtual environment:***
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux / MacOS
 venv\Scripts\activate     # Windows
 ```
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/JonathanLTurner03/IcarusEye.git
 cd IcarusEye
 ```
 
-Prior to this next step, if you have a CUDA compatible GPU, you can modify the requirements.txt file to include the
-appropriate version of `torch` and `torchvision`. If you do not have a CUDA compatible GPU, you can skip this step.
+*Prior to this next step, if you have a CUDA compatible GPU, you can modify the requirements.txt file to include the
+appropriate version of `torch` and `torchvision`. If you do not have a CUDA compatible GPU, you can skip this step.*
 
-2. Install the required libraries:
+2. **Install the required libraries:**
 ```bash
 pip install -r requirements.txt 
 ```
 
-3. Run the project:
+3. **Run the project:**
 ```bash
 python3 main.py
 ```
