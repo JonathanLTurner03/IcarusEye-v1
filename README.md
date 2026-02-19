@@ -1,3 +1,11 @@
+<details>
+  <summary><strong>ARCHIVED PROJECT (SEE DETAILS)</strong></summary>
+  
+  This repository is read-only and will not be updated.
+  
+  Both this project and ZephyrNet are being migrated into a single projected called [IcarusEye-V2](https://github.com/JonathanLTurner03/IcarusEye/) in which the architecture is being completely rebuild to optimize for edge-device computing, maintainability, modularity and usability.
+</details>
+
 # <h1 align="center">IcarusEye</h1>
 
 <img src="resources/icons/IcarusEye-Banner.svg" alt="Icarus Eye" width="100%">
